@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⑥ 城市扩张与岸线退缩耦合 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <script>document.write(generateNavBar('06'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <!-- 年份切换控件 -->
+      <div class="layer-radio-group" id="year-selector">
+        <div class="radio-title">📅 选择年份</div>
+        <label><input type="radio" name="year" value="1950" checked> 1950年</label>
+        <label><input type="radio" name="year" value="1980"> 1980年</label>
+        <label><input type="radio" name="year" value="2000"> 2000年</label>
+        <label><input type="radio" name="year" value="2020"> 2020年</label>
+      </div>
+      <!-- 面积统计 -->
+      <div class="stats-panel" id="stats-panel" style="top:10px;right:160px;">
+        <div class="stat-label">🏙 城市面积</div>
+        <div class="stat-value" id="urban-area">--</div>
+        <div class="stat-label" style="margin-top:6px;">🌊 湖泊面积</div>
+        <div class="stat-value" id="lake-area">--</div>
+      </div>
+    </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content">
+        <div class="sidebar-title">🏙 城市扩张与岸线退缩耦合分析</div>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">
+          1950-2020年间，昆明城市建成区从约20 km²扩张至超过500 km²，同期滇池水域面积从约350 km²缩减至309 km²。城市扩张与湖泊萎缩呈现显著的负相关。
+        </p>
+        <div id="chart-container" style="height:340px;"></div>
+        <p style="font-size:11px;color:#999;text-align:center;margin-top:6px;">▲ 城市面积(红) vs 湖泊面积(蓝) 变化趋势</p>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    // GeoJSON数据：各年份的湖泊多边形
+    const lakeData = {
+      1950: {"type":"Feature","properties":{"year":1950,"area_km2":350},"geometry":{"type":"Polygon","coordinates":[[[102.720,25.032],[102.738,25.018],[102.758,25.000],[102.775,24.975],[102.788,24.945],[102.795,24.912],[102.795,24.882],[102.790,24.855],[102.780,24.828],[102.765,24.800],[102.745,24.772],[102.725,24.748],[102.705,24.728],[102.685,24.712],[102.665,24.702],[102.648,24.698],[102.630,24.702],[102.615,24.715],[102.605,24.732],[102.598,24.755],[102.595,24.778],[102.598,24.800],[102.605,24.825],[102.615,24.848],[102.625,24.872],[102.635,24.898],[102.648,24.922],[102.662,24.945],[102.678,24.968],[102.695,24.988],[102.710,25.008],[102.720,25.032]]}},
+      1980: {"type":"Feature","properties":{"year":1980,"area_km2":325},"geometry":{"type":"Polygon","coordinates":[[[102.718,25.028],[102.735,25.015],[102.752,24.998],[102.768,24.975],[102.780,24.948],[102.788,24.918],[102.788,24.890],[102.782,24.862],[102.772,24.835],[102.758,24.808],[102.740,24.782],[102.722,24.758],[102.702,24.738],[102.685,24.722],[102.668,24.712],[102.652,24.708],[102.635,24.712],[102.622,24.722],[102.612,24.738],[102.605,24.758],[102.600,24.780],[102.602,24.802],[102.608,24.825],[102.615,24.848],[102.625,24.870],[102.635,24.895],[102.648,24.918],[102.662,24.940],[102.678,24.962],[102.695,24.982],[102.710,25.005],[102.718,25.028]]}},
+      2000: {"type":"Feature","properties":{"year":2000,"area_km2":312},"geometry":{"type":"Polygon","coordinates":[[[102.718,25.022],[102.732,25.010],[102.748,24.992],[102.762,24.968],[102.772,24.942],[102.778,24.912],[102.780,24.885],[102.775,24.858],[102.768,24.832],[102.752,24.806],[102.735,24.780],[102.718,24.756],[102.700,24.736],[102.682,24.720],[102.668,24.710],[102.652,24.706],[102.638,24.710],[102.625,24.720],[102.615,24.736],[102.608,24.756],[102.602,24.778],[102.602,24.800],[102.608,24.822],[102.615,24.845],[102.625,24.868],[102.635,24.892],[102.648,24.915],[102.662,24.938],[102.678,24.958],[102.695,24.978],[102.708,24.998],[102.718,25.022]]}},
+      2020: {"type":"Feature","properties":{"year":2020,"area_km2":309.5},"geometry":{"type":"Polygon","coordinates":[[[102.718,25.020],[102.730,25.008],[102.742,24.990],[102.755,24.960],[102.768,24.930],[102.775,24.900],[102.778,24.870],[102.775,24.840],[102.770,24.810],[102.762,24.780],[102.748,24.755],[102.730,24.735],[102.708,24.720],[102.685,24.710],[102.668,24.705],[102.655,24.708],[102.642,24.715],[102.632,24.730],[102.625,24.750],[102.622,24.770],[102.625,24.790],[102.632,24.815],[102.640,24.840],[102.645,24.865],[102.648,24.890],[102.652,24.915],[102.658,24.940],[102.668,24.960],[102.680,24.978],[102.692,24.995],[102.705,25.008],[102.718,25.020]]}}
+    };
+
+    // 各年份的城市建成区多边形（简化表示）
+    const urbanData = {
+      1950: {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"year":1950,"area_km2":20,"name":"昆明城区(1950)"},"geometry":{"type":"Polygon","coordinates":[[[102.700,25.030],[102.715,25.030],[102.715,25.042],[102.700,25.042],[102.700,25.030]]]}}]},
+      1980: {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"year":1980,"area_km2":70,"name":"昆明城区(1980)"},"geometry":{"type":"Polygon","coordinates":[[[102.695,25.022],[102.725,25.022],[102.725,25.048],[102.695,25.048],[102.695,25.022]]]}},{"type":"Feature","properties":{"year":1980,"area_km2":8,"name":"呈贡(1980)"},"geometry":{"type":"Polygon","coordinates":[[[102.788,24.888],[102.800,24.888],[102.800,24.898],[102.788,24.898],[102.788,24.888]]]}}]},
+      2000: {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"year":2000,"area_km2":180,"name":"昆明城区(2000)"},"geometry":{"type":"Polygon","coordinates":[[[102.690,25.015],[102.740,25.015],[102.740,25.052],[102.690,25.052],[102.690,25.015]]]}},{"type":"Feature","properties":{"year":2000,"area_km2":25,"name":"呈贡(2000)"},"geometry":{"type":"Polygon","coordinates":[[[102.782,24.882],[102.805,24.882],[102.805,24.905],[102.782,24.905],[102.782,24.882]]]}},{"type":"Feature","properties":{"year":2000,"area_km2":12,"name":"晋城(2000)"},"geometry":{"type":"Polygon","coordinates":[[[102.690,24.700],[102.705,24.700],[102.705,24.712],[102.690,24.712],[102.690,24.700]]]}}]},
+      2020: {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"year":2020,"area_km2":430,"name":"昆明主城(2020)"},"geometry":{"type":"Polygon","coordinates":[[[102.680,25.005],[102.755,25.005],[102.755,25.060],[102.680,25.060],[102.680,25.005]]]}},{"type":"Feature","properties":{"year":2020,"area_km2":60,"name":"呈贡新区(2020)"},"geometry":{"type":"Polygon","coordinates":[[[102.778,24.870],[102.810,24.870],[102.810,24.910],[102.778,24.910],[102.778,24.870]]]}},{"type":"Feature","properties":{"year":2020,"area_km2":20,"name":"晋城(2020)"},"geometry":{"type":"Polygon","coordinates":[[[102.685,24.695],[102.712,24.695],[102.712,24.716],[102.685,24.716],[102.685,24.695]]]}},{"type":"Feature","properties":{"year":2020,"area_km2":15,"name":"海口(2020)"},"geometry":{"type":"Polygon","coordinates":[[[102.625,24.692],[102.642,24.692],[102.642,24.708],[102.625,24.708],[102.625,24.692]]]}}]}
+    };
+
+    const urbanColors = { 1950: '#f1c40f', 1980: '#e67e22', 2000: '#e74c3c', 2020: '#8e44ad' };
+    const urbanAreas = { 1950: 20, 1980: 78, 2000: 217, 2020: 525 };
+    const lakeAreas  = { 1950: 350, 1980: 325, 2000: 312, 2020: 309.5 };
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map');
+
+      let currentLakeLayer = null;
+      let currentUrbanLayer = null;
+
+      // 显示指定年份的数据
+      function showYear(year) {
+        // 清除旧图层
+        if (currentLakeLayer) map.removeLayer(currentLakeLayer);
+        if (currentUrbanLayer) map.removeLayer(currentUrbanLayer);
+
+        // 湖泊图层
+        currentLakeLayer = L.geoJSON(lakeData[year], {
+          style: { fillColor: '#3498db', fillOpacity: 0.3, color: '#2980b9', weight: 2.5 }
+        }).addTo(map);
+        currentLakeLayer.bindPopup(`<b>${year}年滇池</b><br>面积：${lakeAreas[year]} km²`);
+
+        // 城市图层
+        const color = urbanColors[year];
+        currentUrbanLayer = L.geoJSON(urbanData[year], {
+          style: { fillColor: color, fillOpacity: 0.5, color: color, weight: 1.5 },
+          onEachFeature: function(feature, layer) {
+            layer.bindPopup(`<b>${feature.properties.name}</b><br>建成面积：${feature.properties.area_km2} km²`);
+          }
+        }).addTo(map);
+
+        // 更新统计面板
+        document.getElementById('urban-area').textContent = urbanAreas[year] + ' km²';
+        document.getElementById('lake-area').textContent = lakeAreas[year] + ' km²';
+      }
+
+      // 默认显示1950年
+      showYear(1950);
+
+      // 年份切换事件
+      document.querySelectorAll('input[name="year"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+          showYear(parseInt(this.value));
+        });
+      });
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>图例</h4>
+            <div class="legend-item"><i style="background:#3498db;opacity:0.5;"></i> 滇池水域</div>
+            <div class="legend-item"><i style="background:#f1c40f;opacity:0.6;"></i> 城市 1950 (20 km²)</div>
+            <div class="legend-item"><i style="background:#e67e22;opacity:0.6;"></i> 城市 1980 (78 km²)</div>
+            <div class="legend-item"><i style="background:#e74c3c;opacity:0.6;"></i> 城市 2000 (217 km²)</div>
+            <div class="legend-item"><i style="background:#8e44ad;opacity:0.6;"></i> 城市 2020 (525 km²)</div>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+
+      // ECharts 双轴图
+      const chartDom = document.getElementById('chart-container');
+      const chart = echarts.init(chartDom);
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['城市面积', '湖泊面积'], bottom: 0 },
+        grid: { left: 50, right: 50, top: 20, bottom: 30 },
+        xAxis: { type: 'category', data: ['1950', '1980', '2000', '2020'] },
+        yAxis: [
+          { type: 'value', name: '城市 (km²)', axisLabel: { formatter: '{value}' } },
+          { type: 'value', name: '湖泊 (km²)', axisLabel: { formatter: '{value}' } }
+        ],
+        series: [
+          {
+            name: '城市面积', type: 'bar', yAxisIndex: 0,
+            data: [20, 78, 217, 525],
+            itemStyle: { color: '#e74c3c' },
+            label: { show: true, position: 'top', fontSize: 11 }
+          },
+          {
+            name: '湖泊面积', type: 'line', yAxisIndex: 1,
+            data: [350, 325, 312, 309.5],
+            itemStyle: { color: '#2980b9' },
+            lineStyle: { width: 3 },
+            symbol: 'circle', symbolSize: 8,
+            label: { show: true, position: 'bottom', fontSize: 11 }
+          }
+        ]
+      });
+
+      window.addEventListener('resize', () => chart.resize());
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⑤ 水质热力图+统计图表 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <script>document.write(generateNavBar('05'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="info-banner">💡 悬停或点击监测站点查看水质参数详情</div>
+    </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content">
+        <div class="sidebar-title">💧 水质热力图+统计图表</div>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">
+          滇池水质总体呈现"北重南轻"的空间分布格局。北部靠近昆明主城区，接纳大量城市污水和工业废水；南部水域开阔，自净能力较强。
+        </p>
+        <div id="chart-bar" style="height:260px;"></div>
+        <div id="chart-radar" style="height:260px;margin-top:8px;"></div>
+        <div id="station-info" style="font-size:12px;color:#888;text-align:center;margin-top:6px;">
+          👆 点击地图上的监测站点查看详情
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    // 现代滇池基准
+    const modernLake = {"type":"Feature","properties":{"name":"滇池"},"geometry":{"type":"Polygon","coordinates":[[[102.718,25.020],[102.730,25.008],[102.742,24.990],[102.755,24.960],[102.768,24.930],[102.775,24.900],[102.778,24.870],[102.775,24.840],[102.770,24.810],[102.762,24.780],[102.748,24.755],[102.730,24.735],[102.708,24.720],[102.685,24.710],[102.668,24.705],[102.655,24.708],[102.642,24.715],[102.632,24.730],[102.625,24.750],[102.622,24.770],[102.625,24.790],[102.632,24.815],[102.640,24.840],[102.645,24.865],[102.648,24.890],[102.652,24.915],[102.658,24.940],[102.668,24.960],[102.680,24.978],[102.692,24.995],[102.705,25.008],[102.718,25.020]]]}};
+
+    // 水质监测站点数据
+    const stations = [
+      { name: '草海中心', lat: 25.005, lng: 102.665, TN: 3.8, TP: 0.32, COD: 28, pH: 7.8, DO: 6.2, Chl_a: 85, pollution: 0.85 },
+      { name: '海埂', lat: 24.970, lng: 102.675, TN: 3.2, TP: 0.28, COD: 24, pH: 7.9, DO: 6.5, Chl_a: 72, pollution: 0.75 },
+      { name: '观音山', lat: 24.900, lng: 102.668, TN: 2.5, TP: 0.20, COD: 18, pH: 8.0, DO: 7.0, Chl_a: 55, pollution: 0.55 },
+      { name: '白鱼口', lat: 24.840, lng: 102.680, TN: 2.0, TP: 0.15, COD: 14, pH: 8.1, DO: 7.5, Chl_a: 40, pollution: 0.40 },
+      { name: '海口', lat: 24.780, lng: 102.685, TN: 1.8, TP: 0.13, COD: 12, pH: 8.1, DO: 7.8, Chl_a: 35, pollution: 0.35 },
+      { name: '昆阳', lat: 24.730, lng: 102.678, TN: 1.5, TP: 0.10, COD: 10, pH: 8.2, DO: 8.0, Chl_a: 28, pollution: 0.28 },
+      { name: '晋城', lat: 24.710, lng: 102.700, TN: 1.6, TP: 0.11, COD: 11, pH: 8.1, DO: 7.9, Chl_a: 30, pollution: 0.30 },
+      { name: '呈贡南', lat: 24.820, lng: 102.745, TN: 2.2, TP: 0.18, COD: 16, pH: 8.0, DO: 7.2, Chl_a: 48, pollution: 0.50 },
+      { name: '斗南', lat: 24.895, lng: 102.762, TN: 2.8, TP: 0.24, COD: 20, pH: 7.9, DO: 6.8, Chl_a: 62, pollution: 0.65 },
+      { name: '官渡', lat: 24.968, lng: 102.745, TN: 3.5, TP: 0.30, COD: 26, pH: 7.8, DO: 6.3, Chl_a: 78, pollution: 0.80 },
+      { name: '宝丰', lat: 24.945, lng: 102.720, TN: 3.0, TP: 0.26, COD: 22, pH: 7.9, DO: 6.6, Chl_a: 68, pollution: 0.70 },
+      { name: '海东', lat: 24.860, lng: 102.755, TN: 2.4, TP: 0.19, COD: 17, pH: 8.0, DO: 7.0, Chl_a: 50, pollution: 0.52 }
+    ];
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map');
+
+      // 添加湖泊基准
+      L.geoJSON(modernLake, {
+        style: { fillColor: '#3498db', fillOpacity: 0.15, color: '#2980b9', weight: 2 }
+      }).addTo(map);
+
+      // 热力图层
+      const heatData = stations.map(s => [s.lat, s.lng, s.pollution]);
+      const heatLayer = L.heatLayer(heatData, {
+        radius: 35, blur: 20, maxZoom: 14,
+        max: 1.0,
+        gradient: { 0.0: '#2ecc71', 0.3: '#f1c40f', 0.6: '#e67e22', 0.85: '#e74c3c', 1.0: '#8b0000' }
+      }).addTo(map);
+
+      // 监测站点标记
+      stations.forEach(s => {
+        const color = valueToColor(s.pollution);
+        const marker = L.circleMarker([s.lat, s.lng], {
+          radius: 8, fillColor: color, fillOpacity: 0.9,
+          color: 'white', weight: 2
+        }).addTo(map);
+
+        const popupHtml = `
+          <div class="popup-content">
+            <h3 class="popup-title">📍 ${s.name}</h3>
+            <p><strong>总氮 (TN)：</strong>${s.TN} mg/L</p>
+            <p><strong>总磷 (TP)：</strong>${s.TP} mg/L</p>
+            <p><strong>化学需氧量 (COD)：</strong>${s.COD} mg/L</p>
+            <p><strong>溶解氧 (DO)：</strong>${s.DO} mg/L</p>
+            <p><strong>pH值：</strong>${s.pH}</p>
+            <p><strong>叶绿素a：</strong>${s.Chl_a} μg/L</p>
+            <p class="popup-desc">综合污染指数：${(s.pollution*100).toFixed(0)}%</p>
+          </div>
+        `;
+        marker.bindPopup(popupHtml);
+
+        marker.on('mouseover', function() {
+          marker.setRadius(12);
+          marker.setStyle({ fillOpacity: 1 });
+        });
+        marker.on('mouseout', function() {
+          marker.setRadius(8);
+          marker.setStyle({ fillOpacity: 0.9 });
+        });
+        marker.on('click', function() {
+          document.getElementById('station-info').innerHTML = `
+            📍 <b>${s.name}</b> | 污染指数: ${(s.pollution*100).toFixed(0)}% | TN: ${s.TN} | TP: ${s.TP} | COD: ${s.COD}
+          `;
+        });
+      });
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>污染程度图例</h4>
+            <div class="legend-item"><i style="background:#2ecc71;"></i> 清洁 (≤35%)</div>
+            <div class="legend-item"><i style="background:#f1c40f;"></i> 轻度污染 (35-55%)</div>
+            <div class="legend-item"><i style="background:#e67e22;"></i> 中度污染 (55-70%)</div>
+            <div class="legend-item"><i style="background:#e74c3c;"></i> 重度污染 (70-85%)</div>
+            <div class="legend-item"><i style="background:#8b0000;"></i> 严重污染 (>85%)</div>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+
+      // ECharts: 柱状图（各站点TN/TP对比）
+      const chartBar = echarts.init(document.getElementById('chart-bar'));
+      chartBar.setOption({
+        title: { text: '各站点TN/TP对比', textStyle: { fontSize: 14 } },
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['TN', 'TP'], bottom: 0 },
+        grid: { left: 50, right: 20, top: 30, bottom: 30 },
+        xAxis: { type: 'category', data: stations.map(s => s.name.substring(0,2)), axisLabel: { fontSize: 10, rotate: 30 } },
+        yAxis: { type: 'value', name: 'mg/L' },
+        series: [
+          { name: 'TN', type: 'bar', data: stations.map(s => s.TN), itemStyle: { color: '#e74c3c' }, barMaxWidth: 16 },
+          { name: 'TP', type: 'bar', data: stations.map(s => s.TP), itemStyle: { color: '#f39c12' }, barMaxWidth: 16 }
+        ]
+      });
+
+      // ECharts: 雷达图（选3个代表性站点）
+      const radarStations = stations.filter(s => ['草海中心','观音山','海口'].includes(s.name));
+      const chartRadar = echarts.init(document.getElementById('chart-radar'));
+      chartRadar.setOption({
+        title: { text: '典型站点水质雷达图', textStyle: { fontSize: 14 } },
+        legend: { data: radarStations.map(s => s.name), bottom: 0 },
+        radar: {
+          indicator: [
+            { name: 'TN', max: 5 }, { name: 'TP', max: 0.4 }, { name: 'COD', max: 30 },
+            { name: 'DO', max: 10 }, { name: 'Chl-a', max: 100 }
+          ],
+          radius: '60%'
+        },
+        series: [{
+          type: 'radar',
+          data: radarStations.map((s, i) => ({
+            name: s.name,
+            value: [s.TN, s.TP, s.COD, s.DO, s.Chl_a],
+            itemStyle: { color: ['#e74c3c', '#f39c12', '#2ecc71'][i] },
+            lineStyle: { color: ['#e74c3c', '#f39c12', '#2ecc71'][i] }
+          }))
+        }]
+      });
+
+      window.addEventListener('resize', () => { chartBar.resize(); chartRadar.resize(); });
+    });
+  </script>
+</body>
+</html>

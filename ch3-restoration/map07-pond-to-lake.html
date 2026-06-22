@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⑦ 退塘还湖政策实施区域 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <script>document.write(generateNavBar('07'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="info-banner">💡 点击着色区域查询退塘还湖政策详情</div>
+    </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content" id="sidebar-content">
+        <div class="sidebar-title">🌿 退塘还湖政策实施区域</div>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">
+          为恢复滇池生态，昆明市自2015年起实施"退塘还湖"政策，将环湖鱼塘、农田逐步恢复为湖滨湿地和水域。分三期实施。
+        </p>
+        <div id="zone-detail" class="sidebar-empty">👆 点击地图上的分区查看详细政策信息</div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    // 现代滇池基准
+    const modernLake = {"type":"Feature","properties":{"name":"滇池"},"geometry":{"type":"Polygon","coordinates":[[[102.718,25.020],[102.730,25.008],[102.742,24.990],[102.755,24.960],[102.768,24.930],[102.775,24.900],[102.778,24.870],[102.775,24.840],[102.770,24.810],[102.762,24.780],[102.748,24.755],[102.730,24.735],[102.708,24.720],[102.685,24.710],[102.668,24.705],[102.655,24.708],[102.642,24.715],[102.632,24.730],[102.625,24.750],[102.622,24.770],[102.625,24.790],[102.632,24.815],[102.640,24.840],[102.645,24.865],[102.648,24.890],[102.652,24.915],[102.658,24.940],[102.668,24.960],[102.680,24.978],[102.692,24.995],[102.705,25.008],[102.718,25.020]]]}};
+
+    // 退塘还湖政策分区
+    const policyZones = {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "宝丰湿地退塘还湖工程",
+            "phase": "第一期",
+            "year": "2015-2018",
+            "area_mu": 3600,
+            "status": "已完成",
+            "investment": 28000,
+            "description": "将宝丰村沿湖3600亩鱼塘全部清退，恢复为湖滨生态湿地。种植芦苇、香蒲等水生植物，建设生态护岸。已形成宝丰湿地公园，成为昆明市民休闲和观鸟的重要场所。",
+            "allowed": "生态旅游、科普教育、水质监测",
+            "forbidden": "水产养殖、农业种植、建设开发"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.720,24.975],[102.735,24.970],[102.742,24.958],[102.738,24.945],[102.725,24.940],[102.712,24.945],[102.708,24.958],[102.712,24.970],[102.720,24.975]]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "海东湿地退塘还湖工程",
+            "phase": "第一期",
+            "year": "2015-2018",
+            "area_mu": 4200,
+            "status": "已完成",
+            "investment": 35000,
+            "description": "海东村沿湖4200亩养殖鱼塘和农田全部退让，建设湖滨湿地缓冲带。通过地形重塑和水系连通，恢复自然湖滨生态系统。目前已形成海东湿地公园。",
+            "allowed": "生态旅游、湿地科研、环境监测",
+            "forbidden": "渔业养殖、工业用地、房地产开发"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.740,24.910],[102.758,24.905],[102.765,24.892],[102.760,24.878],[102.748,24.872],[102.735,24.878],[102.730,24.892],[102.735,24.905],[102.740,24.910]]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "斗南湿地退塘还湖工程",
+            "phase": "第二期",
+            "year": "2018-2020",
+            "area_mu": 2800,
+            "status": "已完成",
+            "investment": 22000,
+            "description": "将斗南村沿湖2800亩花卉种植大棚和鱼塘退让，建设斗南湿地公园。该区域原为著名的鲜花种植基地，退让后转型为生态湿地与花卉主题公园相结合的模式。",
+            "allowed": "生态旅游、湿地公园、花卉科普",
+            "forbidden": "大棚种植、水产养殖、商业开发"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.758,24.888],[102.775,24.882],[102.782,24.870],[102.778,24.856],[102.762,24.850],[102.750,24.855],[102.745,24.868],[102.750,24.880],[102.758,24.888]]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "官渡生态修复区",
+            "phase": "第二期",
+            "year": "2018-2020",
+            "area_mu": 5100,
+            "status": "已完成",
+            "investment": 42000,
+            "description": "官渡区沿湖最大规模的退塘还湖工程。涉及六甲、矣六等村庄，清退鱼塘和农田5100亩。通过水系联通和湿地重建，形成连片湖滨生态带，显著改善了北岸水质。",
+            "allowed": "湿地保护、生态监测、环境教育",
+            "forbidden": "农业种植、渔业养殖、任何建设活动"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.702,24.985],[102.725,24.980],[102.735,24.968],[102.732,24.952],[102.718,24.945],[102.700,24.948],[102.692,24.960],[102.695,24.975],[102.702,24.985]]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "晋城退塘还湖工程",
+            "phase": "第二期",
+            "year": "2018-2020",
+            "area_mu": 3200,
+            "status": "已完成",
+            "investment": 26000,
+            "description": "晋城镇沿湖3200亩鱼塘和农田退让，建设南岸湖滨湿地。该区域水质较好，退塘后重点恢复土著水生植物群落，为土著鱼类提供栖息地。",
+            "allowed": "湿地保护、土著物种恢复、科研监测",
+            "forbidden": "水产养殖、农业开发、旅游设施建设"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.695,24.715],[102.712,24.712],[102.720,24.702],[102.718,24.690],[102.705,24.685],[102.692,24.688],[102.685,24.700],[102.688,24.710],[102.695,24.715]]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "海口河退塘还湿工程",
+            "phase": "第三期",
+            "year": "2020-2023",
+            "area_mu": 2500,
+            "status": "已完成",
+            "investment": 20000,
+            "description": "海口河出口区域的退塘还湿工程。重点恢复河口湿地生态系统，改善螳螂川出水水质。通过建设梯级湿地净化系统，进一步削减入河污染物。",
+            "allowed": "湿地保护、水质净化、生态监测",
+            "forbidden": "渔业养殖、砂石开采、工业活动"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.635,24.708],[102.648,24.705],[102.655,24.695],[102.652,24.685],[102.640,24.680],[102.628,24.682],[102.622,24.692],[102.625,24.702],[102.635,24.708]]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "西山脚下生态修复带",
+            "phase": "第三期",
+            "year": "2020-2023",
+            "area_mu": 1800,
+            "status": "施工中",
+            "investment": 15000,
+            "description": "西山脚下的狭窄湖滨带生态修复。利用西山自然地形，建设阶梯式湿地缓冲带。该区域受地形限制面积较小，但生态价值重要，是连接南北湖滨湿地的生态廊道。",
+            "allowed": "生态修复、科研观测",
+            "forbidden": "建设开发、旅游设施、农业活动"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.625,24.745],[102.635,24.750],[102.640,24.762],[102.638,24.770],[102.630,24.775],[102.620,24.770],[102.615,24.758],[102.618,24.748],[102.625,24.745]]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "大渔湾湿地恢复工程",
+            "phase": "第三期",
+            "year": "2020-2023",
+            "area_mu": 3000,
+            "status": "施工中",
+            "investment": 24000,
+            "description": "大渔湾区域退塘还湖工程。该区域历史上为滇池东南岸的大型湖湾，围垦时间较晚。通过拆除鱼塘堤坝和水系连通，恢复湖湾自然形态，重建水生植被群落。",
+            "allowed": "生态恢复、环境监测",
+            "forbidden": "水产养殖、围填湖、旅游开发"
+          },
+          "geometry": {"type":"Polygon","coordinates":[[[102.755,24.792],[102.772,24.788],[102.780,24.775],[102.778,24.760],[102.765,24.752],[102.750,24.755],[102.742,24.768],[102.745,24.782],[102.755,24.792]]]}
+        }
+      ]
+    };
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map', { zoom: 12 });
+
+      // 现代滇池
+      L.geoJSON(modernLake, {
+        style: { fillColor: '#3498db', fillOpacity: 0.2, color: '#2980b9', weight: 2 }
+      }).addTo(map);
+
+      // 阶段颜色
+      const phaseColors = {
+        '第一期': { fill: '#3498db', stroke: '#2471a3' },
+        '第二期': { fill: '#2ecc71', stroke: '#1e8449' },
+        '第三期': { fill: '#27ae60', stroke: '#1e8449' }
+      };
+
+      // 政策分区图层
+      const zoneLayer = L.geoJSON(policyZones, {
+        style: function(feature) {
+          const c = phaseColors[feature.properties.phase];
+          const isComplete = feature.properties.status === '已完成';
+          return {
+            fillColor: c.fill, fillOpacity: isComplete ? 0.5 : 0.35,
+            color: c.stroke, weight: 2,
+            dashArray: isComplete ? null : '6,4'
+          };
+        },
+        onEachFeature: function(feature, layer) {
+          layer.bindPopup(createPopupContent(feature.properties));
+          layer.on('click', function() {
+            const p = feature.properties;
+            document.getElementById('zone-detail').innerHTML = `
+              <div class="zone-detail">
+                <div class="zone-name">🌿 ${p.name}</div>
+                <div class="zone-info">
+                  <div class="info-item">
+                    <div class="info-label">实施阶段</div>
+                    <div class="info-value">${p.phase}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">实施年份</div>
+                    <div class="info-value">${p.year}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">退让面积</div>
+                    <div class="info-value">${formatMu(p.area_mu)}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">投资金额</div>
+                    <div class="info-value">${(p.investment/10000).toFixed(1)} 亿元</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">实施状态</div>
+                    <div class="info-value" style="color:${p.status==='已完成'?'#27ae60':'#e67e22'}">${p.status}</div>
+                  </div>
+                </div>
+                <p style="font-size:13px;color:#555;line-height:1.6;">${p.description}</p>
+                <h4>✅ 允许活动</h4>
+                <ul class="allowed-list"><li>${p.allowed.replace(/, /g, '</li><li>')}</li></ul>
+                <h4>🚫 禁止活动</h4>
+                <ul class="forbidden-list"><li>${p.forbidden.replace(/, /g, '</li><li>')}</li></ul>
+              </div>
+            `;
+          });
+        }
+      }).addTo(map);
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const total = policyZones.features.reduce((s,f)=>s+f.properties.area_mu, 0);
+        const complete = policyZones.features.filter(f=>f.properties.status==='已完成').reduce((s,f)=>s+f.properties.area_mu, 0);
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>退塘还湖图例</h4>
+            <div class="legend-item"><i style="background:#3498db;opacity:0.6;"></i> 第一期 (2015-2018)</div>
+            <div class="legend-item"><i style="background:#2ecc71;opacity:0.6;"></i> 第二期 (2018-2020)</div>
+            <div class="legend-item"><i style="background:#27ae60;opacity:0.5;"></i> 第三期 (2020-2023)</div>
+            <div class="legend-item"><i style="border:2px dashed #888;background:transparent;"></i> 施工中</div>
+            <hr style="margin:4px 0;">
+            <small>总退让：${formatMu(total)}</small><br>
+            <small>已完成：${formatMu(complete)}</small>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+    });
+  </script>
+</body>
+</html>

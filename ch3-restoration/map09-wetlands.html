@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⑨ 湿地与生物多样性点位 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+  <style>
+    .detail-card {
+      background: white;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border-left: 5px solid #27ae60;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+    }
+    .detail-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+    .detail-card .card-title { font-size: 17px; font-weight: bold; color: #1a5276; margin-bottom: 8px; }
+    .detail-card .card-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+    .detail-card .card-meta span { font-size: 12px; color: #888; }
+    .detail-card .card-body { font-size: 13px; color: #555; line-height: 1.6; }
+    .detail-card .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .detail-card .tag { display: inline-block; padding: 3px 10px; border-radius: 14px; font-size: 11px; font-weight: bold; }
+    .tag-bird { background: #e8f8f5; color: #16a085; }
+    .tag-plant { background: #eaf7ea; color: #27ae60; }
+    .tag-fish { background: #eef6fc; color: #2980b9; }
+    .tag-type { background: #fef9e7; color: #e67e22; }
+  </style>
+</head>
+<body>
+  <script>document.write(generateNavBar('09'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="info-banner">💡 点击湿地标记查看详细信息卡片</div>
+    </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content" id="sidebar-content">
+        <div class="sidebar-title">🦆 湿地与生物多样性点位</div>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">
+          滇池周边已建成10余个湿地公园，形成环湖生态屏障。这些湿地为大量鸟类、鱼类和植物提供了栖息地，生物多样性显著恢复。
+        </p>
+        <div id="wetland-cards">
+          <div class="sidebar-empty">👆 点击地图上的湿地标记查看详细物种信息</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    const modernLake = {"type":"Feature","properties":{"name":"滇池"},"geometry":{"type":"Polygon","coordinates":[[[102.718,25.020],[102.730,25.008],[102.742,24.990],[102.755,24.960],[102.768,24.930],[102.775,24.900],[102.778,24.870],[102.775,24.840],[102.770,24.810],[102.762,24.780],[102.748,24.755],[102.730,24.735],[102.708,24.720],[102.685,24.710],[102.668,24.705],[102.655,24.708],[102.642,24.715],[102.632,24.730],[102.625,24.750],[102.622,24.770],[102.625,24.790],[102.632,24.815],[102.640,24.840],[102.645,24.865],[102.648,24.890],[102.652,24.915],[102.658,24.940],[102.668,24.960],[102.680,24.978],[102.692,24.995],[102.705,25.008],[102.718,25.020]]]}};
+
+    // 湿地公园和生物多样性点位
+    const wetlandSites = [
+      {
+        name: '宝丰湿地公园', lat: 24.955, lng: 102.718, type: '湖滨生态湿地',
+        area_mu: 3600, year: '2018年建成',
+        plants: '芦苇、香蒲、荷花、再力花、梭鱼草、菖蒲、水葱',
+        birds: '白鹭、苍鹭、黑水鸡、小䴙䴘、白骨顶、翠鸟、斑嘴鸭',
+        fishes: '滇池金线鲃、鲫鱼、鲤鱼、黄颡鱼',
+        species: 156,
+        desc: '滇池北岸最大的湖滨湿地公园，原为密集鱼塘区，经退塘还湖后建成。湿地水质净化效果显著，已成为昆明市民观鸟和自然教育的热门地点。'
+      },
+      {
+        name: '海东湿地公园', lat: 24.898, lng: 102.750, type: '湖滨生态湿地',
+        area_mu: 4200, year: '2018年建成',
+        plants: '茭草、菖蒲、美人蕉、千屈菜、鸢尾、水烛',
+        birds: '牛背鹭、池鹭、黑翅长脚鹬、金眶鸻、白鹡鸰',
+        fishes: '滇池金线鲃、银白鱼、泥鳅',
+        species: 142,
+        desc: '滇池东岸大型湿地公园，拥有开阔水面和丰富的水生植被。是候鸟迁徙的重要停歇地，冬季可观察到大量水鸟聚集。'
+      },
+      {
+        name: '斗南湿地公园', lat: 24.878, lng: 102.768, type: '复合型湿地',
+        area_mu: 2800, year: '2020年建成',
+        plants: '美人蕉、风车草、再力花、花叶芦竹、睡莲',
+        birds: '白鹡鸰、棕背伯劳、珠颈斑鸠、白头鹎',
+        fishes: '鲫鱼、麦穗鱼、棒花鱼',
+        species: 98,
+        desc: '由花卉大棚转型而来的湿地公园，融合了湿地保护与花卉展示功能。是"退棚还湿"的示范案例。'
+      },
+      {
+        name: '海埂公园湿地', lat: 24.965, lng: 102.678, type: '城市滨湖湿地',
+        area_mu: 1200, year: '2010年改造',
+        plants: '垂柳、水杉、池杉、迎春花、云南樱花',
+        birds: '红嘴鸥（冬季大量聚集）、海鸥、棕头鸥',
+        fishes: '鲫鱼、鲤鱼、草鱼',
+        species: 68,
+        desc: '昆明最著名的湖滨公园，冬季是红嘴鸥的主要栖息地。每年11月至次年3月，数万只红嘴鸥在此越冬，成为昆明城市生态名片。'
+      },
+      {
+        name: '永昌湿地', lat: 24.935, lng: 102.695, type: '人工湿地',
+        area_mu: 800, year: '2016年建成',
+        plants: '水葱、香蒲、茭白、浮萍、紫萍',
+        birds: '小䴙䴘、黑水鸡、白胸苦恶鸟',
+        fishes: '鲫鱼、麦穗鱼',
+        species: 45,
+        desc: '小型城市湿地，兼具景观与水质净化功能。是城区居民近距离体验湿地生态的重要场所。'
+      },
+      {
+        name: '官渡湿地公园', lat: 24.978, lng: 102.710, type: '湖滨生态湿地',
+        area_mu: 2100, year: '2019年建成',
+        plants: '芦苇群落、香蒲群落、荇菜、菱角',
+        birds: '大白鹭、中白鹭、苍鹭、夜鹭、绿头鸭',
+        fishes: '滇池金线鲃、异色云南鳅',
+        species: 132,
+        desc: '官渡古镇旁的湿地公园，融合了历史文化与生态保护。湿地水系与滇池直接连通，是鱼类洄游的重要通道。'
+      },
+      {
+        name: '晋城南岸湿地', lat: 24.715, lng: 102.698, type: '自然恢复湿地',
+        area_mu: 3200, year: '2020年建成',
+        plants: '芦苇、茭草、野菱、金鱼藻、苦草',
+        birds: '黑鹳、东方白鹳（偶见）、白琵鹭、反嘴鹬',
+        fishes: '滇池金线鲃、银白鱼、云南光唇鱼',
+        species: 178,
+        desc: '滇池南岸的大型湿地，水质较好。是滇池土著鱼类的重要栖息地和繁殖场所。也是候鸟迁徙路线上的关键节点。'
+      },
+      {
+        name: '海口河湿地', lat: 24.740, lng: 102.650, type: '河口湿地',
+        area_mu: 1500, year: '2021年建成',
+        plants: '水柳、枫杨、菖蒲、慈姑',
+        birds: '灰鹡鸰、白顶溪鸲、红尾水鸲',
+        fishes: '滇池金线鲃、横纹南鳅',
+        species: 85,
+        desc: '海口河（螳螂川）出水口湿地，是滇池唯一的自然出水通道。湿地对出湖水质起到最后的净化作用。'
+      },
+      {
+        name: '大渔湾湿地', lat: 24.788, lng: 102.768, type: '恢复中湿地',
+        area_mu: 3000, year: '2022年施工中',
+        plants: '正在恢复芦苇、香蒲等先锋物种',
+        birds: '已观测到白鹭、池鹭等水鸟回归',
+        fishes: '监测中',
+        species: 38,
+        desc: '正在恢复中的湖湾湿地。原为密集鱼塘区，退塘后正在进行地形重塑和水生植被重建。预计2024年全面完工。'
+      },
+      {
+        name: '西山森林公园（湖滨段）', lat: 24.862, lng: 102.635, type: '森林-湿地过渡带',
+        area_mu: 500, year: '2015年划定',
+        plants: '云南松、华山松、滇青冈、杜鹃、山茶',
+        birds: '戴胜、大斑啄木鸟、黑枕黄鹂、红嘴蓝鹊',
+        fishes: '—',
+        species: 210,
+        desc: '西山与滇池之间的生态过渡带，森林物种极为丰富。是昆明近郊生物多样性最高的区域之一，兼具森林和湿地鸟类群落。'
+      }
+    ];
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map', { zoom: 12 });
+
+      // 滇池基准
+      L.geoJSON(modernLake, {
+        style: { fillColor: '#3498db', fillOpacity: 0.15, color: '#2980b9', weight: 2 }
+      }).addTo(map);
+
+      // 类型颜色映射
+      const typeColors = {
+        '湖滨生态湿地': '#27ae60',
+        '复合型湿地': '#2ecc71',
+        '城市滨湖湿地': '#3498db',
+        '人工湿地': '#2980b9',
+        '自然恢复湿地': '#16a085',
+        '河口湿地': '#1abc9c',
+        '恢复中湿地': '#f39c12',
+        '森林-湿地过渡带': '#8e44ad'
+      };
+
+      const typeIcons = {
+        '湖滨生态湿地': '🌿',
+        '复合型湿地': '🌾',
+        '城市滨湖湿地': '🏞',
+        '人工湿地': '🏗',
+        '自然恢复湿地': '🌱',
+        '河口湿地': '💧',
+        '恢复中湿地': '🚧',
+        '森林-湿地过渡带': '🌲'
+      };
+
+      // 创建标记
+      wetlandSites.forEach(site => {
+        const color = typeColors[site.type] || '#27ae60';
+        const icon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div style="width:${site.type==='森林-湿地过渡带'?14:12}px;height:${site.type==='森林-湿地过渡带'?14:12}px;background:${color};border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+          iconSize: [18, 18], iconAnchor: [9, 9], popupAnchor: [0, -9]
+        });
+
+        const marker = L.marker([site.lat, site.lng], { icon: icon }).addTo(map);
+        marker.bindPopup(`<b>${typeIcons[site.type]||''} ${site.name}</b><br>${site.type}<br>物种数：${site.species} 种`);
+
+        marker.on('click', function() {
+          const cardsDiv = document.getElementById('wetland-cards');
+          cardsDiv.innerHTML = `
+            <div class="detail-card">
+              <div class="card-title">${typeIcons[site.type]||''} ${site.name}</div>
+              <div class="card-meta">
+                <span>📐 ${formatMu(site.area_mu)}</span>
+                <span>📅 ${site.year}</span>
+                <span>🦉 ${site.species} 种</span>
+              </div>
+              <div class="card-body">${site.desc}</div>
+              <div class="card-tags">
+                <span class="tag tag-type">${site.type}</span>
+                <span class="tag tag-bird">🦆 ${site.birds.substring(0,12)}...</span>
+                <span class="tag tag-plant">🌿 ${site.plants.substring(0,12)}...</span>
+                <span class="tag tag-fish">🐟 ${site.fishes.substring(0,12)}...</span>
+              </div>
+            </div>
+          `;
+        });
+      });
+
+      // 侧边栏初始显示所有湿地概览
+      const allCards = wetlandSites.map((s, i) => `
+        <div class="detail-card" id="card-${i}">
+          <div class="card-title">${typeIcons[s.type]||''} ${s.name}</div>
+          <div class="card-meta">
+            <span>📐 ${formatMu(s.area_mu)}</span>
+            <span>🦉 ${s.species} 种</span>
+            <span title="${s.type}">🏷 ${s.type}</span>
+          </div>
+          <div class="card-body">${s.desc.substring(0, 80)}...</div>
+        </div>
+      `).join('');
+      document.getElementById('wetland-cards').innerHTML = allCards;
+
+      // 点击侧边栏卡片时定位到地图
+      wetlandSites.forEach((site, i) => {
+        setTimeout(() => {
+          const card = document.getElementById('card-' + i);
+          if (card) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', () => {
+              map.setView([site.lat, site.lng], 15);
+            });
+          }
+        }, 100);
+      });
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        let items = '';
+        Object.keys(typeColors).forEach(t => {
+          items += `<div class="legend-item"><i style="background:${typeColors[t]};border-radius:50%;"></i> ${t}</div>`;
+        });
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>湿地类型图例</h4>
+            ${items}
+            <hr style="margin:4px 0;">
+            <small>共 ${wetlandSites.length} 处湿地 | 物种总计：${wetlandSites.reduce((s,w)=>s+w.species,0)} 种</small>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>④ 1950-2000年岸线变迁动态 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <script>document.write(generateNavBar('04'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <!-- 控制条 -->
+      <div class="control-bar" style="flex-wrap:wrap;max-width:600px;">
+        <span style="font-size:13px;">📅</span>
+        <span class="year-display" id="year-display">1950</span>
+        <button class="btn play" id="btn-play">▶ 播放</button>
+        <button class="btn" id="btn-pause" style="display:none;">⏸ 暂停</button>
+        <button class="btn" id="btn-reset">↺ 重置</button>
+        <div class="speed-btns">
+          <button class="btn-speed active" data-speed="800">1x</button>
+          <button class="btn-speed" data-speed="400">2x</button>
+          <button class="btn-speed" data-speed="150">4x</button>
+        </div>
+        <!-- 时间轴进度条 -->
+        <div style="width:100%;margin-top:4px;">
+          <div class="timeline-bar">
+            <div class="timeline-progress" id="timeline-progress" style="width:0%;"></div>
+          </div>
+          <div class="timeline-ticks">
+            <span>1950</span><span>1960</span><span>1970</span><span>1980</span><span>1990</span><span>2000</span>
+          </div>
+        </div>
+      </div>
+      <!-- 统计面板 -->
+      <div class="stats-panel" id="stats">
+        <div class="stat-label">📅 年份</div>
+        <div class="stat-value" id="stat-year">1950</div>
+        <div class="stat-label" style="margin-top:8px;">🌊 湖泊面积</div>
+        <div class="stat-value" id="stat-area">350.0 km²</div>
+        <div class="stat-change down" id="stat-change" style="margin-top:4px;">—</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    // 逐年岸线数据（5年间隔：1950-2000）
+    const shorelines = {};
+    const years = [1950, 1955, 1960, 1965, 1970, 1975, 1980, 1985, 1990, 1995, 2000];
+    const areas = {
+      1950: 350, 1955: 345, 1960: 340, 1965: 336, 1970: 332,
+      1975: 328, 1980: 325, 1985: 322, 1990: 318, 1995: 315, 2000: 312
+    };
+
+    // 1950年基准坐标
+    const base1950 = [
+      [102.720,25.032],[102.738,25.018],[102.758,25.000],[102.775,24.975],[102.788,24.945],
+      [102.795,24.912],[102.795,24.882],[102.790,24.855],[102.780,24.828],[102.765,24.800],
+      [102.745,24.772],[102.725,24.748],[102.705,24.728],[102.685,24.712],[102.665,24.702],
+      [102.648,24.698],[102.630,24.702],[102.615,24.715],[102.605,24.732],[102.598,24.755],
+      [102.595,24.778],[102.598,24.800],[102.605,24.825],[102.615,24.848],[102.625,24.872],
+      [102.635,24.898],[102.648,24.922],[102.662,24.945],[102.678,24.968],[102.695,24.988],
+      [102.710,25.008],[102.720,25.032]
+    ];
+
+    // 2000年基准坐标
+    const base2000 = [
+      [102.718,25.022],[102.732,25.010],[102.748,24.992],[102.762,24.968],[102.772,24.942],
+      [102.778,24.912],[102.780,24.885],[102.775,24.858],[102.768,24.832],[102.752,24.806],
+      [102.735,24.780],[102.718,24.756],[102.700,24.736],[102.682,24.720],[102.668,24.710],
+      [102.652,24.706],[102.638,24.710],[102.625,24.720],[102.615,24.736],[102.608,24.756],
+      [102.602,24.778],[102.602,24.800],[102.608,24.822],[102.615,24.845],[102.625,24.868],
+      [102.635,24.892],[102.648,24.915],[102.662,24.938],[102.678,24.958],[102.695,24.978],
+      [102.708,24.998],[102.718,25.022]
+    ];
+
+    // 生成所有年份的多边形
+    years.forEach(year => {
+      const t = (year - 1950) / 50; // 0 to 1
+      const coords = base1950.map((pt, i) => {
+        const target = base2000[i] || pt;
+        return [pt[0] + (target[0] - pt[0]) * t, pt[1] + (target[1] - pt[1]) * t];
+      });
+
+      shorelines[year] = {
+        "type": "Feature",
+        "properties": { "year": year, "area_km2": areas[year] },
+        "geometry": { "type": "Polygon", "coordinates": [coords] }
+      };
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map', { zoom: 12 });
+
+      let currentLayer = null;
+      let currentIdx = 0;
+      let playing = false;
+      let animFrame = null;
+      let playSpeed = 800;
+      let lastFrameTime = 0;
+
+      function showYear(year) {
+        if (currentLayer) map.removeLayer(currentLayer);
+        const data = shorelines[year];
+        const area = data.properties.area_km2;
+        const startArea = areas[1950];
+
+        // 颜色从深蓝(1950)渐变到浅红(2000)表示萎缩
+        const t = (year - 1950) / 50;
+        const r = Math.floor(41 + t * 190);
+        const g = Math.floor(128 - t * 80);
+        const b = Math.floor(185 - t * 100);
+        const color = `rgb(${r},${g},${b})`;
+
+        currentLayer = L.geoJSON(data, {
+          style: { fillColor: color, fillOpacity: 0.4, color: color, weight: 3 }
+        }).addTo(map);
+        currentLayer.bindPopup(`<b>${year}年滇池</b><br>水域面积：${area.toFixed(0)} km²<br>较1950年缩减：${(startArea-area).toFixed(0)} km²`);
+
+        // Update UI
+        document.getElementById('year-display').textContent = year;
+        document.getElementById('stat-year').textContent = year;
+        document.getElementById('stat-area').textContent = area.toFixed(1) + ' km²';
+        const loss = startArea - area;
+        document.getElementById('stat-change').textContent = loss > 0 ? `较1950年缩减 ${loss.toFixed(0)} km² (${(loss/startArea*100).toFixed(1)}%)` : '—';
+        document.getElementById('stat-change').className = 'stat-change down';
+
+        // Timeline progress
+        document.getElementById('timeline-progress').style.width = t * 100 + '%';
+
+        // Update index
+        currentIdx = years.indexOf(year);
+      }
+
+      // 初始化
+      showYear(1950);
+
+      // Animation loop
+      function animate(timestamp) {
+        if (!playing) return;
+
+        if (timestamp - lastFrameTime >= playSpeed) {
+          lastFrameTime = timestamp;
+          if (currentIdx < years.length - 1) {
+            currentIdx++;
+            showYear(years[currentIdx]);
+          } else {
+            stopPlay();
+            return;
+          }
+        }
+        animFrame = requestAnimationFrame(animate);
+      }
+
+      function startPlay() {
+        if (currentIdx >= years.length - 1) { currentIdx = 0; showYear(years[0]); }
+        playing = true;
+        lastFrameTime = performance.now();
+        document.getElementById('btn-play').style.display = 'none';
+        document.getElementById('btn-pause').style.display = 'inline-block';
+        animFrame = requestAnimationFrame(animate);
+      }
+
+      function stopPlay() {
+        playing = false;
+        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+        document.getElementById('btn-play').style.display = 'inline-block';
+        document.getElementById('btn-pause').style.display = 'none';
+      }
+
+      document.getElementById('btn-play').addEventListener('click', startPlay);
+      document.getElementById('btn-pause').addEventListener('click', stopPlay);
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        stopPlay();
+        showYear(1950);
+      });
+
+      // Speed buttons
+      document.querySelectorAll('.btn-speed').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          playSpeed = parseInt(this.dataset.speed);
+        });
+      });
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>岸线变迁图例</h4>
+            <div class="legend-item"><i style="background:rgb(41,128,185);opacity:0.5;"></i> 1950年 (350 km²)</div>
+            <div class="legend-item"><i style="background:rgb(120,90,140);opacity:0.5;"></i> 1975年 (328 km²)</div>
+            <div class="legend-item"><i style="background:rgb(200,50,70);opacity:0.5;"></i> 2000年 (312 km²)</div>
+            <hr style="margin:4px 0;">
+            <small style="color:#888;">总缩减：38 km² (10.9%)</small>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+    });
+  </script>
+</body>
+</html>

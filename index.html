@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>滇池交互式地图集 — 云南师范大学地理学部</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <style>
+    .index-body {
+      padding-top: 0;
+      background: linear-gradient(135deg, #1a5276 0%, #2980b9 50%, #3498db 100%);
+      min-height: 100vh;
+    }
+    .index-header {
+      text-align: center;
+      padding: 50px 20px 30px;
+      color: white;
+    }
+    .index-header h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      letter-spacing: 2px;
+    }
+    .index-header .subtitle {
+      font-size: 17px;
+      opacity: 0.9;
+      margin-bottom: 6px;
+    }
+    .index-header .dept {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    .index-chapters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      padding: 20px 30px 50px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .chapter-section {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .chapter-section:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 32px rgba(0,0,0,0.2);
+    }
+    .chapter-header {
+      padding: 18px 24px;
+      color: white;
+      font-size: 19px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .chapter-header .ch-icon {
+      font-size: 32px;
+      line-height: 1;
+    }
+    .map-cards {
+      padding: 14px;
+    }
+    .map-card {
+      display: block;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background: #f8f9fa;
+      border-left: 5px solid #2980b9;
+      transition: all 0.25s;
+      text-decoration: none;
+      color: #2c3e50;
+    }
+    .map-card:last-child { margin-bottom: 0; }
+    .map-card:hover {
+      background: #eef6fc;
+      border-left-color: #1a5276;
+      text-decoration: none;
+      color: #1a5276;
+      padding-left: 22px;
+    }
+    .map-card .map-num {
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      text-align: center;
+      background: #2980b9;
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .map-card .map-name {
+      font-weight: bold;
+      font-size: 15px;
+    }
+    .map-card .map-interaction {
+      font-size: 12px;
+      color: #999;
+      margin-top: 3px;
+      padding-left: 36px;
+    }
+    .index-footer {
+      text-align: center;
+      padding: 20px 20px 30px;
+      color: rgba(255,255,255,0.65);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    .index-footer a {
+      color: rgba(255,255,255,0.8);
+    }
+  </style>
+</head>
+<body class="index-body">
+  <div class="index-header">
+    <h1>🌊 滇池交互式地图集</h1>
+    <p class="subtitle">Dianchi Lake Interactive Web Atlas</p>
+    <p class="dept">云南师范大学 · 地理学部 · 自然地理与资源环境</p>
+  </div>
+
+  <div class="index-chapters">
+    <!-- 第1章 -->
+    <div class="chapter-section">
+      <div class="chapter-header" style="background: linear-gradient(135deg, #c0392b, #e74c3c);">
+        <span class="ch-icon">📜</span> 第一章：历史变迁
+      </div>
+      <div class="map-cards">
+        <a href="ch1-history/map01-ancient-lake.html" class="map-card" style="border-left-color: #c0392b;">
+          <span class="map-num" style="background:#c0392b;">①</span>
+          <span class="map-name">古代滇池范围复原</span>
+          <div class="map-interaction">🔍 弹出信息窗口 — 点击各时期多边形查看详情</div>
+        </a>
+        <a href="ch1-history/map02-ming-qing.html" class="map-card" style="border-left-color: #e67e22;">
+          <span class="map-num" style="background:#e67e22;">②</span>
+          <span class="map-name">明清围湖造田示意</span>
+          <div class="map-interaction">🔍 弹出信息窗口 — 点击围垦区查看围垦历史</div>
+        </a>
+        <a href="ch1-history/map03-image-comparison.html" class="map-card" style="border-left-color: #f39c12;">
+          <span class="map-num" style="background:#f39c12;">③</span>
+          <span class="map-name">1950s VS 1980s 影像对比</span>
+          <div class="map-interaction">🖱 卷帘滑动 — 拖动分割线对比两个时期的湖面变化</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 第2章 -->
+    <div class="chapter-section">
+      <div class="chapter-header" style="background: linear-gradient(135deg, #2471a3, #2980b9);">
+        <span class="ch-icon">🏭</span> 第二章：现代变化
+      </div>
+      <div class="map-cards">
+        <a href="ch2-modern/map04-shoreline-animation.html" class="map-card" style="border-left-color: #2471a3;">
+          <span class="map-num" style="background:#2471a3;">④</span>
+          <span class="map-name">1950-2000年岸线变迁动态</span>
+          <div class="map-interaction">▶ 时间轴播放 — 动画展示岸线逐年萎缩过程</div>
+        </a>
+        <a href="ch2-modern/map05-water-quality.html" class="map-card" style="border-left-color: #1abc9c;">
+          <span class="map-num" style="background:#1abc9c;">⑤</span>
+          <span class="map-name">水质热力图+统计图表</span>
+          <div class="map-interaction">🖱 悬浮显示数值 — 查看各监测站水质参数</div>
+        </a>
+        <a href="ch2-modern/map06-urban-expansion.html" class="map-card" style="border-left-color: #8e44ad;">
+          <span class="map-num" style="background:#8e44ad;">⑥</span>
+          <span class="map-name">城市扩张与岸线退缩耦合</span>
+          <div class="map-interaction">🔄 图层显隐切换 — 对比不同时期城市与湖泊变化</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 第3章 -->
+    <div class="chapter-section">
+      <div class="chapter-header" style="background: linear-gradient(135deg, #1e8449, #27ae60);">
+        <span class="ch-icon">🌿</span> 第三章：治理恢复
+      </div>
+      <div class="map-cards">
+        <a href="ch3-restoration/map07-pond-to-lake.html" class="map-card" style="border-left-color: #1e8449;">
+          <span class="map-num" style="background:#1e8449;">⑦</span>
+          <span class="map-name">退塘还湖政策实施区域</span>
+          <div class="map-interaction">📍 分区点击查询 — 查看实施阶段和恢复详情</div>
+        </a>
+        <a href="ch3-restoration/map08-shoreline-recovery.html" class="map-card" style="border-left-color: #2ecc71;">
+          <span class="map-num" style="background:#2ecc71;">⑧</span>
+          <span class="map-name">2000-2023年岸线恢复滑块</span>
+          <div class="map-interaction">🎚 时间滑块 — 拖动查看逐年岸线恢复过程</div>
+        </a>
+        <a href="ch3-restoration/map09-wetlands.html" class="map-card" style="border-left-color: #16a085;">
+          <span class="map-num" style="background:#16a085;">⑨</span>
+          <span class="map-name">湿地与生物多样性点位</span>
+          <div class="map-interaction">🃏 点位详情卡片 — 点击查看湿地公园与物种信息</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- 第4章 -->
+    <div class="chapter-section">
+      <div class="chapter-header" style="background: linear-gradient(135deg, #7d3c98, #8e44ad);">
+        <span class="ch-icon">🔮</span> 第四章：规划与未来
+      </div>
+      <div class="map-cards">
+        <a href="ch4-planning/map10-ecological-redline.html" class="map-card" style="border-left-color: #7d3c98;">
+          <span class="map-num" style="background:#7d3c98;">⑩</span>
+          <span class="map-name">生态红线规划</span>
+          <div class="map-interaction">📋 分区查询管控要求 — 查看各级管控区规定</div>
+        </a>
+        <a href="ch4-planning/map11-future-2030.html" class="map-card" style="border-left-color: #9b59b6;">
+          <span class="map-num" style="background:#9b59b6;">⑪</span>
+          <span class="map-name">2030未来情景模拟</span>
+          <div class="map-interaction">🔄 现状/模拟图层切换 — 对比当前与规划未来</div>
+        </a>
+        <a href="ch4-planning/map12-public-participation.html" class="map-card" style="border-left-color: #e91e63;">
+          <span class="map-num" style="background:#e91e63;">⑫</span>
+          <span class="map-name">公众参与互动地图</span>
+          <div class="map-interaction">📝 弹窗查询+问卷链接 — 参与滇池保护反馈</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="index-footer">
+    <p>🌊 本地图集为地理学部教学演示项目 | 数据来源：云南省生态环境厅 · 昆明市滇池管理局 · 历史文献资料</p>
+    <p>底图：<a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> | 卫星影像：<a href="https://www.esri.com/" target="_blank">Esri</a></p>
+    <p>© 2024 云南师范大学地理学部 | 自然地理与资源环境专业</p>
+  </div>
+</body>
+</html>

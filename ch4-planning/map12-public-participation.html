@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⑫ 公众参与互动地图 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <script>document.write(generateNavBar('12'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="info-banner">💡 点击图标参与滇池保护行动</div>
+    </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content" id="sidebar-content">
+        <div class="sidebar-title">🤝 公众参与互动地图</div>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">
+          滇池保护需要全社会参与。这里汇集了环保NGO项目点、社区监测站、公众教育活动和志愿者行动信息。
+        </p>
+        <div id="participation-content">
+          <div class="sidebar-empty">👆 点击地图上的标记查看参与方式</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    const modernLake = {"type":"Feature","properties":{"name":"滇池"},"geometry":{"type":"Polygon","coordinates":[[[102.718,25.020],[102.730,25.008],[102.742,24.990],[102.755,24.960],[102.768,24.930],[102.775,24.900],[102.778,24.870],[102.775,24.840],[102.770,24.810],[102.762,24.780],[102.748,24.755],[102.730,24.735],[102.708,24.720],[102.685,24.710],[102.668,24.705],[102.655,24.708],[102.642,24.715],[102.632,24.730],[102.625,24.750],[102.622,24.770],[102.625,24.790],[102.632,24.815],[102.640,24.840],[102.645,24.865],[102.648,24.890],[102.652,24.915],[102.658,24.940],[102.668,24.960],[102.680,24.978],[102.692,24.995],[102.705,25.008],[102.718,25.020]]]}};
+
+    // 参与点数据
+    const participationPoints = [
+      {
+        type: 'ngo', name: '云南生态网络',
+        lat: 24.980, lng: 102.708,
+        organizer: '云南生态网络（环保NGO）',
+        activity: '滇池湿地保护志愿者行动、水质监测公众参与计划',
+        time: '每月第一个周末',
+        contact: 'info@yn-eco.org',
+        url: 'https://example.com/yn-eco',
+        desc: '成立于2005年的本土环保NGO，长期开展滇池流域公众参与式水质监测，招募志愿者参与环湖湿地巡护。'
+      },
+      {
+        type: 'monitor', name: '海埂社区监测站',
+        lat: 24.968, lng: 102.678,
+        organizer: '昆明市滇池管理局 + 海埂社区',
+        activity: '社区水质简易监测、湖面垃圾清理',
+        time: '每周六上午',
+        contact: '0871-6431XXXX',
+        desc: '社区级水质监测点，配备便携式检测设备，居民可自行检测湖水透明度、溶解氧、pH值等指标并上报。'
+      },
+      {
+        type: 'education', name: '宝丰湿地自然学校',
+        lat: 24.950, lng: 102.718,
+        organizer: '昆明市生态环境局',
+        activity: '湿地生态教育、观鸟导览、亲子自然体验',
+        time: '每周六、日 9:00-16:00',
+        contact: '0871-6417XXXX',
+        desc: '依托宝丰湿地公园建设的自然教育基地，设有湿地科普展馆、观鸟屋和自然教室。定期举办"小小湿地守护者"亲子活动。'
+      },
+      {
+        type: 'ngo', name: '绿色昆明',
+        lat: 24.990, lng: 102.720,
+        organizer: '绿色昆明环保协会',
+        activity: '入滇河道垃圾清理、排污口巡查、环保倡导',
+        time: '不定期（关注公众号）',
+        contact: 'green-km@example.org',
+        url: 'https://example.com/green-km',
+        desc: '专注于入滇河道保护的环保组织，定期组织"河小青"巡河活动。开发了"滇池保护地图"微信小程序供公众举报污染。'
+      },
+      {
+        type: 'monitor', name: '呈贡大学城监测点',
+        lat: 24.855, lng: 102.790,
+        organizer: '云南师范大学地理学部',
+        activity: '学生科研监测、水质采样与分析',
+        time: '按教学计划安排',
+        contact: '地理学部实验中心',
+        desc: '依托高校科研力量的水质监测点，地理学部师生定期采集水样进行实验室分析，数据纳入滇池水质数据库。'
+      },
+      {
+        type: 'volunteer', name: '红嘴鸥保护志愿站',
+        lat: 24.962, lng: 102.678,
+        organizer: '昆明市林业和草原局',
+        activity: '红嘴鸥数量统计、投喂管理、伤病救护',
+        time: '每年11月-次年3月',
+        contact: '0871-6317XXXX',
+        desc: '每年冬季红嘴鸥来昆越冬期间，招募志愿者参与数量统计和投喂管理工作。是昆明市民参与度最高的生态保护志愿活动。'
+      },
+      {
+        type: 'education', name: '滇池博物馆',
+        lat: 24.940, lng: 102.695,
+        organizer: '昆明市文化和旅游局',
+        activity: '滇池历史文化展览、生态科普教育',
+        time: '周二-周日 9:00-17:00',
+        contact: '0871-6433XXXX',
+        url: 'https://example.com/dianchi-museum',
+        desc: '展示滇池历史文化、生态变迁和保护成果的专题博物馆。设有互动体验区，适合中小学生研学旅行。'
+      },
+      {
+        type: 'volunteer', name: '环湖绿道志愿维护',
+        lat: 24.910, lng: 102.745,
+        organizer: '昆明市城市管理局',
+        activity: '环湖绿道清洁维护、绿化养护、游客引导',
+        time: '每月15日集中行动',
+        contact: '0871-6338XXXX',
+        desc: '滇池环湖绿道全长约136公里，需要大量志愿者参与日常维护和节假日游客引导服务。'
+      },
+      {
+        type: 'ngo', name: '云南鸟会',
+        lat: 24.720, lng: 102.702,
+        organizer: '云南省鸟类协会',
+        activity: '水鸟调查、栖息地保护、观鸟培训',
+        time: '每季度一次水鸟调查',
+        contact: 'bird-yn@example.org',
+        desc: '专注滇池水鸟保护的民间组织，每季度组织环湖水鸟同步调查。冬季在晋城南岸举办观鸟节。'
+      },
+      {
+        type: 'monitor', name: '官渡古镇社区监测点',
+        lat: 24.965, lng: 102.745,
+        organizer: '官渡街道办事处',
+        activity: '社区环境监督、黑臭水体排查上报',
+        time: '工作日 9:00-17:00',
+        contact: '0871-6727XXXX',
+        desc: '街道级别的环境监督点，居民可在此反映身边的生态环境问题。配有"随手拍"上报系统。'
+      }
+    ];
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map', { zoom: 12 });
+
+      // 滇池基准
+      L.geoJSON(modernLake, {
+        style: { fillColor: '#3498db', fillOpacity: 0.15, color: '#2980b9', weight: 2 }
+      }).addTo(map);
+
+      // 类型配置
+      const typeConfig = {
+        ngo: { color: '#e74c3c', icon: '🏛', label: '环保NGO' },
+        monitor: { color: '#2980b9', icon: '🔬', label: '社区监测站' },
+        education: { color: '#27ae60', icon: '📚', label: '公众教育' },
+        volunteer: { color: '#f39c12', icon: '🤲', label: '志愿服务' }
+      };
+
+      // 创建参与点标记
+      participationPoints.forEach(point => {
+        const config = typeConfig[point.type];
+        const icon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div style="width:32px;height:32px;background:${config.color};border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;">${config.icon}</div>`,
+          iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18]
+        });
+
+        const marker = L.marker([point.lat, point.lng], { icon: icon }).addTo(map);
+
+        marker.bindPopup(`
+          <div class="popup-content">
+            <h3 class="popup-title">${config.icon} ${point.name}</h3>
+            <p><strong>类型：</strong>${config.label}</p>
+            <p><strong>组织者：</strong>${point.organizer}</p>
+            <p><strong>活动内容：</strong>${point.activity}</p>
+            <p><strong>活动时间：</strong>${point.time}</p>
+            <p class="popup-desc">${point.desc}</p>
+            <p><strong>联系方式：</strong>${point.contact}</p>
+            ${point.url ? `<a href="${point.url}" target="_blank" class="survey-btn">🔗 访问网站</a>` : ''}
+          </div>
+        `);
+
+        marker.on('click', function() {
+          document.getElementById('participation-content').innerHTML = `
+            <div class="detail-card">
+              <div class="card-title">${config.icon} ${point.name}</div>
+              <div class="card-meta">
+                <span>🏷 ${config.label}</span>
+                <span>🕐 ${point.time}</span>
+              </div>
+              <div class="card-body">${point.desc}</div>
+              <p style="font-size:13px;margin-top:8px;"><strong>组织者：</strong>${point.organizer}</p>
+              <p style="font-size:13px;"><strong>活动：</strong>${point.activity}</p>
+              <p style="font-size:13px;"><strong>联系：</strong>${point.contact}</p>
+              ${point.url ? `<a href="${point.url}" target="_blank" class="survey-btn">🔗 访问网站了解更多</a>` : ''}
+            </div>
+          `;
+        });
+      });
+
+      // 侧边栏初始内容：所有参与点概览 + 反馈表单
+      const allPoints = participationPoints.map(p => {
+        const config = typeConfig[p.type];
+        return `<div class="detail-card" style="cursor:pointer;" onclick="document.querySelectorAll('.leaflet-marker-icon')[${participationPoints.indexOf(p)}]?.click()">
+          <div class="card-title">${config.icon} ${p.name}</div>
+          <div class="card-meta"><span>🏷 ${config.label}</span><span>🕐 ${p.time}</span></div>
+          <div class="card-body">${p.desc.substring(0,70)}...</div>
+        </div>`;
+      }).join('');
+      document.getElementById('participation-content').innerHTML = `
+        <h4 style="margin-bottom:8px;color:#1a5276;">📍 参与点一览</h4>
+        ${allPoints}
+        <hr style="margin:16px 0;">
+        <h4 style="margin-bottom:8px;color:#1a5276;">📝 意见反馈</h4>
+        <div class="feedback-form">
+          <label>姓名</label>
+          <input type="text" id="fb-name" placeholder="请输入您的姓名">
+          <label>联系方式</label>
+          <input type="text" id="fb-contact" placeholder="手机号或邮箱">
+          <label>建议内容</label>
+          <textarea id="fb-suggestion" rows="3" placeholder="请写下您对滇池保护的建议..."></textarea>
+          <button class="btn-submit" onclick="submitFeedback()">✉ 提交建议</button>
+        </div>
+        <a href="https://www.wjx.cn/" target="_blank" class="survey-btn" style="display:block;text-align:center;margin-top:10px;">📋 参与滇池保护问卷调查</a>
+      `;
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>参与类型图例</h4>
+            <div class="legend-item"><i style="background:#e74c3c;border-radius:50%;"></i> 🏛 环保NGO</div>
+            <div class="legend-item"><i style="background:#2980b9;border-radius:50%;"></i> 🔬 社区监测站</div>
+            <div class="legend-item"><i style="background:#27ae60;border-radius:50%;"></i> 📚 公众教育</div>
+            <div class="legend-item"><i style="background:#f39c12;border-radius:50%;"></i> 🤲 志愿服务</div>
+            <hr style="margin:4px 0;">
+            <small style="color:#888;">共 ${participationPoints.length} 个参与点</small>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+    });
+
+    // 反馈提交（演示功能）
+    function submitFeedback() {
+      const name = document.getElementById('fb-name').value;
+      const contact = document.getElementById('fb-contact').value;
+      const suggestion = document.getElementById('fb-suggestion').value;
+      if (!name || !suggestion) {
+        alert('请填写您的姓名和建议内容后再提交。');
+        return;
+      }
+      alert('✅ 感谢您的参与，' + name + '！\n\n您的建议已记录（演示功能）。\n\n在正式版本中，反馈将发送至昆明市滇池管理局。');
+      document.getElementById('fb-name').value = '';
+      document.getElementById('fb-contact').value = '';
+      document.getElementById('fb-suggestion').value = '';
+    }
+  </script>
+</body>
+</html>

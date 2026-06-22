@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⑧ 2000-2023年岸线恢复滑块 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <script>document.write(generateNavBar('08'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <!-- 控制条 -->
+      <div class="control-bar" style="bottom:20px;">
+        <span style="font-size:13px;">📅</span>
+        <span class="year-display" id="year-display">2000</span>
+        <input type="range" id="year-slider" min="2000" max="2023" value="2000" step="1">
+        <button class="btn play" id="btn-play">▶ 播放</button>
+        <div class="speed-btns">
+          <button class="btn-speed active" data-speed="500">1x</button>
+          <button class="btn-speed" data-speed="250">2x</button>
+          <button class="btn-speed" data-speed="100">4x</button>
+        </div>
+      </div>
+      <!-- 统计面板 -->
+      <div class="stats-panel" id="stats">
+        <div class="stat-label">📅 年份</div>
+        <div class="stat-value" id="stat-year">2000</div>
+        <div class="stat-label" style="margin-top:8px;">🌊 湖泊面积</div>
+        <div class="stat-value" id="stat-area">312.0 km²</div>
+        <div class="stat-label" style="margin-top:4px;">📈 恢复面积</div>
+        <div class="stat-value" style="color:#27ae60;" id="stat-recovery">0.0 km²</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    // 逐年岸线数据（2000-2023）
+    // 使用插值：2000年面积最小(~312)，2023年恢复至~309.5
+    // 但实际上恢复是从2015年退塘还湖政策后才明显加速的
+    const shorelineByYear = {};
+
+    // 2000年基准多边形（面积约312 km²，历史最小）
+    const base2000 = [
+      [102.718,25.022],[102.732,25.010],[102.748,24.992],[102.762,24.968],[102.772,24.942],
+      [102.778,24.912],[102.780,24.885],[102.775,24.858],[102.768,24.832],[102.752,24.806],
+      [102.735,24.780],[102.718,24.756],[102.700,24.736],[102.682,24.720],[102.668,24.710],
+      [102.652,24.706],[102.638,24.710],[102.625,24.720],[102.615,24.736],[102.608,24.756],
+      [102.602,24.778],[102.602,24.800],[102.608,24.822],[102.615,24.845],[102.625,24.868],
+      [102.635,24.892],[102.648,24.915],[102.662,24.938],[102.678,24.958],[102.695,24.978],
+      [102.708,24.998],[102.718,25.022]
+    ];
+
+    // 2023年基准多边形（面积约309.5 km²）
+    const base2023 = [
+      [102.718,25.020],[102.730,25.008],[102.742,24.990],[102.755,24.960],[102.768,24.930],
+      [102.775,24.900],[102.778,24.870],[102.775,24.840],[102.770,24.810],[102.762,24.780],
+      [102.748,24.755],[102.730,24.735],[102.708,24.720],[102.685,24.710],[102.668,24.705],
+      [102.655,24.708],[102.642,24.715],[102.632,24.730],[102.625,24.750],[102.622,24.770],
+      [102.625,24.790],[102.632,24.815],[102.640,24.840],[102.645,24.865],[102.648,24.890],
+      [102.652,24.915],[102.658,24.940],[102.668,24.960],[102.680,24.978],[102.692,24.995],
+      [102.705,25.008],[102.718,25.020]
+    ];
+
+    // 生成逐年插值多边形
+    // 2000-2014: 维持低位波动（312附近，略微波动）
+    // 2015-2023: 退塘还湖政策实施，面积逐步恢复
+    for (let year = 2000; year <= 2023; year++) {
+      let t; // 插值参数 0=2000 base, 1=2023 base
+      let area;
+
+      if (year <= 2014) {
+        // 2000-2014: 波动期，基本不变
+        t = 0;
+        area = 311.5 + Math.sin((year - 2000) * 0.5) * 0.8;
+      } else {
+        // 2015-2023: 恢复期，线性插值
+        t = (year - 2014) / 9;
+        area = 311.5 + t * (309.5 - 311.5); // 面积变化（注意：岸线外扩=面积增加）
+      }
+
+      // 对每个坐标点进行线性插值
+      const coords = base2000.map((pt, i) => {
+        const target = base2023[i] || pt;
+        return [
+          pt[0] + (target[0] - pt[0]) * t,
+          pt[1] + (target[1] - pt[1]) * t
+        ];
+      });
+
+      shorelineByYear[year] = {
+        "type": "Feature",
+        "properties": { "year": year, "area_km2": area },
+        "geometry": { "type": "Polygon", "coordinates": [coords] }
+      };
+    }
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map', { zoom: 12 });
+
+      let currentLayer = null;
+      let playing = false;
+      let playSpeed = 500;
+      let playInterval = null;
+      let currentYear = 2000;
+
+      function updateMap(year) {
+        if (currentLayer) map.removeLayer(currentLayer);
+
+        currentYear = year;
+        const data = shorelineByYear[year];
+        const area = data.properties.area_km2;
+
+        // 颜色：2000-2014为暖色（退化），2015后向蓝绿色过渡（恢复）
+        let color;
+        if (year <= 2014) color = '#e74c3c';
+        else color = `hsl(${160 + (year-2014)*5}, 60%, 45%)`; // 从红向绿过渡
+
+        currentLayer = L.geoJSON(data, {
+          style: {
+            fillColor: color, fillOpacity: 0.35, color: color, weight: 2.5
+          }
+        }).addTo(map);
+        currentLayer.bindPopup(`<b>${year}年滇池</b><br>水域面积：${area.toFixed(1)} km²`);
+
+        // 更新UI
+        document.getElementById('year-display').textContent = year;
+        document.getElementById('year-slider').value = year;
+        document.getElementById('stat-year').textContent = year;
+        document.getElementById('stat-area').textContent = area.toFixed(1) + ' km²';
+
+        const recovery = area - shorelineByYear[2000].properties.area_km2;
+        document.getElementById('stat-recovery').textContent = (recovery >= 0 ? '+' : '') + recovery.toFixed(2) + ' km²';
+        document.getElementById('stat-recovery').style.color = recovery >= 0 ? '#27ae60' : '#e74c3c';
+
+        // 如果是恢复期，显示恢复标注
+        document.getElementById('stat-recovery').parentElement.querySelector('.stat-label').textContent =
+          year <= 2014 ? '📉 面积变化' : '📈 恢复面积';
+      }
+
+      // 初始化显示2000年
+      updateMap(2000);
+
+      // 滑块事件
+      document.getElementById('year-slider').addEventListener('input', function() {
+        updateMap(parseInt(this.value));
+      });
+
+      // 播放/暂停
+      const btnPlay = document.getElementById('btn-play');
+      btnPlay.addEventListener('click', function() {
+        if (playing) {
+          stopPlay();
+        } else {
+          startPlay();
+        }
+      });
+
+      function startPlay() {
+        playing = true;
+        btnPlay.textContent = '⏸ 暂停';
+        btnPlay.className = 'btn pause';
+        if (currentYear >= 2023) currentYear = 2000;
+
+        playInterval = setInterval(() => {
+          if (currentYear < 2023) {
+            currentYear++;
+            updateMap(currentYear);
+          } else {
+            stopPlay();
+          }
+        }, playSpeed);
+      }
+
+      function stopPlay() {
+        playing = false;
+        btnPlay.textContent = '▶ 播放';
+        btnPlay.className = 'btn play';
+        if (playInterval) { clearInterval(playInterval); playInterval = null; }
+      }
+
+      // 速度控制
+      document.querySelectorAll('.btn-speed').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          playSpeed = parseInt(this.dataset.speed);
+          if (playing) { stopPlay(); startPlay(); }
+        });
+      });
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>岸线变化图例</h4>
+            <div class="legend-item"><i style="background:#e74c3c;opacity:0.5;"></i> 2000-2014 退化期</div>
+            <div class="legend-item"><i style="background:#27ae60;opacity:0.5;"></i> 2015-2023 恢复期</div>
+            <hr style="margin:4px 0;">
+            <small style="color:#888;">🎚 拖动滑块或点击播放</small><br>
+            <small style="color:#888;">2000年基准：约312 km²</small>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+    });
+  </script>
+</body>
+</html>

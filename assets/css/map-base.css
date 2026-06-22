@@ -1,0 +1,338 @@
+/* ============================================
+   滇池交互式地图集 — 地图基础样式
+   图例、弹窗、侧边栏详情卡片
+   ============================================ */
+
+/* === Info Legend === */
+.info-legend {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 13px;
+  line-height: 1.8;
+  max-width: 220px;
+}
+
+.info-legend h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #1a5276;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.legend-item i {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+
+.legend-item i.circle {
+  border-radius: 50%;
+}
+
+/* === Popup Content === */
+.popup-content {
+  max-width: 280px;
+}
+
+.popup-title {
+  color: #1a5276;
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.popup-content p {
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #333;
+}
+
+.popup-content p strong {
+  color: #2c3e50;
+}
+
+.popup-desc {
+  color: #555;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #eee;
+}
+
+.popup-footer {
+  border-top: 1px solid #eee;
+  margin-top: 8px;
+  padding-top: 6px;
+  color: #999;
+}
+
+.popup-footer small {
+  font-size: 11px;
+}
+
+/* === Detail Card (in sidebar, for Map 9 wetlands etc.) === */
+.detail-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid #2980b9;
+  transition: all 0.2s;
+}
+
+.detail-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.detail-card .card-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1a5276;
+  margin-bottom: 8px;
+}
+
+.detail-card .card-meta {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.detail-card .card-body {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.detail-card .card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.detail-card .tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #eef6fc;
+  color: #2980b9;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* === Policy Zone Detail (for Map 7, Map 10) === */
+.zone-detail {
+  padding: 12px;
+}
+
+.zone-detail .zone-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1a5276;
+  margin-bottom: 12px;
+}
+
+.zone-detail .zone-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.zone-detail .info-item {
+  background: #f0f4f8;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.zone-detail .info-item .info-label {
+  color: #888;
+  font-size: 11px;
+}
+
+.zone-detail .info-item .info-value {
+  font-weight: bold;
+  color: #2c3e50;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.zone-detail h4 {
+  font-size: 14px;
+  color: #1a5276;
+  margin: 12px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+}
+
+.zone-detail .allowed-list,
+.zone-detail .forbidden-list {
+  list-style: none;
+  padding: 0;
+  font-size: 13px;
+}
+
+.zone-detail .allowed-list li {
+  padding: 3px 0;
+  color: #27ae60;
+}
+.zone-detail .allowed-list li::before {
+  content: "✅ ";
+}
+
+.zone-detail .forbidden-list li {
+  padding: 3px 0;
+  color: #e74c3c;
+}
+.zone-detail .forbidden-list li::before {
+  content: "🚫 ";
+}
+
+/* === Survey Link Button === */
+.survey-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  background: #e74c3c;
+  color: white;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+.survey-btn:hover {
+  background: #c0392b;
+  color: white;
+  text-decoration: none;
+  transform: scale(1.05);
+}
+
+/* === Timeline Progress Bar (for Map 4) === */
+.timeline-bar {
+  position: relative;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.timeline-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #2980b9;
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+
+.timeline-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* === Speed Control Buttons === */
+.speed-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.speed-btns .btn-speed {
+  padding: 3px 10px;
+  border: 1px solid #2980b9;
+  background: white;
+  color: #2980b9;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.speed-btns .btn-speed.active {
+  background: #2980b9;
+  color: white;
+}
+
+.speed-btns .btn-speed:hover {
+  background: #1a5276;
+  color: white;
+  border-color: #1a5276;
+}
+
+/* === Custom Marker Base === */
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* === Info banner on maps === */
+.info-banner {
+  position: absolute;
+  top: 10px;
+  left: 50px;
+  z-index: 800;
+  background: rgba(255,255,255,0.9);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #888;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* === Layer radio group (for Map 6) === */
+.layer-radio-group {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 800;
+  background: rgba(255,255,255,0.95);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  font-size: 13px;
+}
+
+.layer-radio-group .radio-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #1a5276;
+}
+
+.layer-radio-group label {
+  display: block;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+}
+
+.layer-radio-group label:hover {
+  background: #f0f4f8;
+}
+
+.layer-radio-group input[type="radio"] {
+  margin-right: 6px;
+  accent-color: #2980b9;
+}

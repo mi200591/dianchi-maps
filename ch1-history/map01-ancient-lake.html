@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>① 古代滇池范围复原 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <script>document.write(generateNavBar('01'));</script>
+
+  <div class="page-wrapper">
+    <!-- Map -->
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="info-banner">💡 点击各时期水域多边形查看详细历史信息</div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content" id="sidebar-content">
+        <div class="sidebar-title">📜 古代滇池范围复原</div>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">
+          滇池古称"滇南泽"，汉代面积约510 km²，是今天的1.65倍。两千年来，自然淤积与人类围垦使湖面持续萎缩。
+        </p>
+        <div class="sidebar-empty" id="sidebar-placeholder">👆 点击地图上的水域范围查看详细信息</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Shared Scripts -->
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <!-- Inline GeoJSON Data -->
+  <script>
+    // 2023年现代滇池范围 (基准，约309 km²)
+    const modernLake = {
+      "type": "Feature",
+      "properties": { "name": "现代滇池（2023年）", "period": "2023年", "year": 2023, "area_km2": 309.5, "description": "经过退塘还湖、生态修复后的滇池水域范围。相比汉代缩减约200 km²。" },
+      "geometry": { "type": "Polygon", "coordinates": [[
+        [102.718, 25.020], [102.730, 25.008], [102.742, 24.990], [102.755, 24.960],
+        [102.768, 24.930], [102.775, 24.900], [102.778, 24.870], [102.775, 24.840],
+        [102.770, 24.810], [102.762, 24.780], [102.748, 24.755], [102.730, 24.735],
+        [102.708, 24.720], [102.685, 24.710], [102.668, 24.705], [102.655, 24.708],
+        [102.642, 24.715], [102.632, 24.730], [102.625, 24.750], [102.622, 24.770],
+        [102.625, 24.790], [102.632, 24.815], [102.640, 24.840], [102.645, 24.865],
+        [102.648, 24.890], [102.652, 24.915], [102.658, 24.940], [102.668, 24.960],
+        [102.680, 24.978], [102.692, 24.995], [102.705, 25.008], [102.718, 25.020]
+      ]]}
+    };
+
+    // 汉代滇池范围 (~510 km²) — 向外扩张
+    const hanLake = {
+      "type": "Feature",
+      "properties": { "name": "汉代滇池范围", "period": "汉代（约公元前202-公元220年）", "year": "汉代", "area_km2": 510, "description": "汉代滇池面积约510 km²，为历史最大范围。北至松华坝、南至晋城、西抵西山脚下、东达呈贡梁王山麓。《史记·西南夷列传》记载："滇池方三百里"，是当时西南地区最大的湖泊。" },
+      "geometry": { "type": "Polygon", "coordinates": [[
+        [102.725, 25.048], [102.740, 25.035], [102.758, 25.015], [102.775, 24.990],
+        [102.790, 24.960], [102.798, 24.930], [102.802, 24.895], [102.800, 24.860],
+        [102.792, 24.825], [102.780, 24.792], [102.762, 24.762], [102.740, 24.738],
+        [102.715, 24.718], [102.690, 24.705], [102.668, 24.695], [102.648, 24.692],
+        [102.628, 24.695], [102.612, 24.705], [102.600, 24.722], [102.592, 24.745],
+        [102.588, 24.770], [102.590, 24.795], [102.598, 24.822], [102.608, 24.850],
+        [102.615, 24.878], [102.620, 24.905], [102.628, 24.930], [102.640, 24.955],
+        [102.655, 24.978], [102.672, 24.998], [102.690, 25.015], [102.705, 25.030],
+        [102.718, 25.040], [102.725, 25.048]
+      ]]}
+    };
+
+    // 唐代滇池范围 (~450 km²)
+    const tangLake = {
+      "type": "Feature",
+      "properties": { "name": "唐代滇池范围", "period": "唐代（约公元618-907年）", "year": "唐代", "area_km2": 450, "description": "唐代滇池面积约450 km²。南诏国时期，昆明地区成为南诏东部重镇，已有初步的水利开发活动。盘龙江携带大量泥沙入湖，北部三角洲开始发育，湖面较汉代有所缩减。" },
+      "geometry": { "type": "Polygon", "coordinates": [[
+        [102.722, 25.038], [102.738, 25.025], [102.755, 25.005], [102.770, 24.982],
+        [102.782, 24.955], [102.790, 24.925], [102.792, 24.895], [102.790, 24.862],
+        [102.782, 24.830], [102.768, 24.800], [102.750, 24.772], [102.730, 24.748],
+        [102.710, 24.728], [102.688, 24.712], [102.668, 24.702], [102.650, 24.698],
+        [102.632, 24.702], [102.618, 24.712], [102.608, 24.728], [102.600, 24.748],
+        [102.595, 24.772], [102.595, 24.795], [102.602, 24.820], [102.612, 24.845],
+        [102.620, 24.870], [102.625, 24.895], [102.630, 24.918], [102.640, 24.942],
+        [102.652, 24.965], [102.668, 24.985], [102.685, 25.005], [102.700, 25.022],
+        [102.712, 25.032], [102.722, 25.038]
+      ]]}
+    };
+
+    // 明代滇池范围 (~380 km²)
+    const mingLake = {
+      "type": "Feature",
+      "properties": { "name": "明代滇池范围", "period": "明代（约公元1368-1644年）", "year": "明代", "area_km2": 380, "description": "明代滇池面积约380 km²。明初大量移民入滇屯田，兴修水利。洪武年间疏浚海口河（螳螂川），加速湖水下泄，湖面进一步缩小。北岸盘龙江三角洲显著推进，东岸也出现大面积围垦。" },
+      "geometry": { "type": "Polygon", "coordinates": [[
+        [102.720, 25.028], [102.735, 25.015], [102.750, 24.998], [102.762, 24.978],
+        [102.772, 24.952], [102.780, 24.920], [102.780, 24.892], [102.775, 24.862],
+        [102.768, 24.835], [102.755, 24.808], [102.740, 24.782], [102.725, 24.758],
+        [102.708, 24.738], [102.690, 24.722], [102.672, 24.712], [102.655, 24.708],
+        [102.638, 24.712], [102.625, 24.722], [102.615, 24.738], [102.608, 24.758],
+        [102.602, 24.780], [102.602, 24.802], [102.608, 24.825], [102.615, 24.848],
+        [102.622, 24.872], [102.630, 24.895], [102.640, 24.918], [102.652, 24.940],
+        [102.665, 24.960], [102.680, 24.980], [102.695, 24.998], [102.708, 25.015],
+        [102.720, 25.028]
+      ]]}
+    };
+
+    // 清代滇池范围 (~340 km²)
+    const qingLake = {
+      "type": "Feature",
+      "properties": { "name": "清代滇池范围", "period": "清代（约公元1644-1912年）", "year": "清代", "area_km2": 340, "description": "清代滇池面积约340 km²。"围湖造田"在这一时期大规模展开，尤其是滇池东岸的呈贡和北岸的官渡地区，大量湖滨湿地被开垦为农田。清末滇池面积已接近300 km²。" },
+      "geometry": { "type": "Polygon", "coordinates": [[
+        [102.720, 25.025], [102.734, 25.012], [102.748, 24.995], [102.758, 24.975],
+        [102.768, 24.950], [102.775, 24.918], [102.775, 24.890], [102.772, 24.862],
+        [102.765, 24.838], [102.752, 24.812], [102.738, 24.788], [102.722, 24.765],
+        [102.705, 24.745], [102.688, 24.728], [102.672, 24.718], [102.658, 24.712],
+        [102.642, 24.715], [102.630, 24.725], [102.620, 24.740], [102.612, 24.758],
+        [102.608, 24.778], [102.608, 24.800], [102.612, 24.822], [102.620, 24.845],
+        [102.628, 24.868], [102.635, 24.890], [102.645, 24.912], [102.655, 24.935],
+        [102.668, 24.955], [102.682, 24.975], [102.695, 24.995], [102.708, 25.012],
+        [102.720, 25.025]
+      ]]}
+    };
+  </script>
+
+  <!-- Map Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map');
+
+      const periodColors = {
+        '汉代': { fill: '#c0392b', stroke: '#922b21', fillOpacity: 0.35 },
+        '唐代': { fill: '#e67e22', stroke: '#ba4a00', fillOpacity: 0.35 },
+        '明代': { fill: '#f39c12', stroke: '#b7950b', fillOpacity: 0.35 },
+        '清代': { fill: '#27ae60', stroke: '#1e8449', fillOpacity: 0.35 }
+      };
+
+      // 现代基准（浅蓝色）
+      const modernLayer = L.geoJSON(modernLake, {
+        style: { fillColor: '#3498db', fillOpacity: 0.15, color: '#2980b9', weight: 1, dashArray: '5,5' },
+      }).addTo(map);
+      modernLayer.bindPopup('<div class="popup-content"><h3 class="popup-title">现代滇池（2023年）</h3><p><strong>面积：</strong>309.5 km²</p><p class="popup-desc">当前水域范围，作为对比基准</p></div>');
+
+      // 四个历史时期图层
+      const layers = {};
+      const features = { '汉代': hanLake, '唐代': tangLake, '明代': mingLake, '清代': qingLake };
+
+      Object.keys(features).forEach(period => {
+        const f = features[period];
+        const style = periodColors[period];
+        const layer = L.geoJSON(f, {
+          style: { fillColor: style.fill, color: style.stroke, fillOpacity: style.fillOpacity, weight: 2.5 },
+          onEachFeature: function(feature, lyr) {
+            lyr.bindPopup(createPopupContent(feature.properties));
+            lyr.on('click', function() {
+              // Update sidebar
+              const p = feature.properties;
+              document.getElementById('sidebar-placeholder').style.display = 'none';
+              document.getElementById('sidebar-content').innerHTML = `
+                <div class="sidebar-title">📜 ${p.period}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                  <div style="background:#f0f4f8;padding:10px;border-radius:8px;text-align:center;">
+                    <div style="font-size:24px;font-weight:bold;color:#1a5276;">${p.area_km2}</div>
+                    <div style="font-size:11px;color:#888;">面积 (km²)</div>
+                  </div>
+                  <div style="background:#f0f4f8;padding:10px;border-radius:8px;text-align:center;">
+                    <div style="font-size:24px;font-weight:bold;color:#c0392b;">${(510-p.area_km2).toFixed(0)}</div>
+                    <div style="font-size:11px;color:#888;">缩减量 (km²)</div>
+                  </div>
+                </div>
+                <p style="font-size:13px;color:#555;line-height:1.7;">${p.description}</p>
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;font-size:11px;color:#999;">
+                  与现代相比：减少 ${(p.area_km2-309.5).toFixed(0)} km² (${((p.area_km2-309.5)/p.area_km2*100).toFixed(1)}%)
+                </div>
+              `;
+            });
+          }
+        });
+        layers[period] = layer;
+        // 默认全部显示
+        layer.addTo(map);
+      });
+
+      // 历史时期切换
+      const overlayControl = L.control.layers(null, layers, { position: 'topright', collapsed: false }).addTo(map);
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>图例</h4>
+            <div class="legend-item"><i style="background:#c0392b;opacity:0.6;"></i> 汉代 (~510 km²)</div>
+            <div class="legend-item"><i style="background:#e67e22;opacity:0.6;"></i> 唐代 (~450 km²)</div>
+            <div class="legend-item"><i style="background:#f39c12;opacity:0.6;"></i> 明代 (~380 km²)</div>
+            <div class="legend-item"><i style="background:#27ae60;opacity:0.6;"></i> 清代 (~340 km²)</div>
+            <div class="legend-item"><i style="background:#3498db;opacity:0.3;border:1px dashed #2980b9;"></i> 现代 (309 km²)</div>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+    });
+  </script>
+</body>
+</html>

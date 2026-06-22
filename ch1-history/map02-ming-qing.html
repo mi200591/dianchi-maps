@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>② 明清围湖造田示意 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+</head>
+<body>
+  <script>document.write(generateNavBar('02'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="info-banner">💡 点击红色围垦区域查看围垦历史详情</div>
+    </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-content" id="sidebar-content">
+        <div class="sidebar-title">🌾 明清围湖造田示意</div>
+        <p style="font-size:13px;color:#666;margin-bottom:12px;">
+          明清两代是滇池围垦的高峰期。明初屯田和清代人口增长推动了大规模的"围湖造田"运动，东岸和北岸的大片水域被改造为农田。
+        </p>
+        <div class="sidebar-empty" id="sidebar-placeholder">👆 点击地图上的围垦区域查看详细信息</div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    // 2023年现代滇池 (基准)
+    const modernLakeGeo = {
+      "type": "Feature",
+      "properties": { "name": "现代滇池（2023年）", "area_km2": 309.5 },
+      "geometry": { "type": "Polygon", "coordinates": [[
+        [102.718,25.020],[102.730,25.008],[102.742,24.990],[102.755,24.960],
+        [102.768,24.930],[102.775,24.900],[102.778,24.870],[102.775,24.840],
+        [102.770,24.810],[102.762,24.780],[102.748,24.755],[102.730,24.735],
+        [102.708,24.720],[102.685,24.710],[102.668,24.705],[102.655,24.708],
+        [102.642,24.715],[102.632,24.730],[102.625,24.750],[102.622,24.770],
+        [102.625,24.790],[102.632,24.815],[102.640,24.840],[102.645,24.865],
+        [102.648,24.890],[102.652,24.915],[102.658,24.940],[102.668,24.960],
+        [102.680,24.978],[102.692,24.995],[102.705,25.008],[102.718,25.020]
+      ]]}
+    };
+
+    // 围垦区域 GeoJSON FeatureCollection
+    const reclamationZones = {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "官渡围垦区",
+            "period": "明代-清代",
+            "area_mu": 32000,
+            "village": "官渡古镇、六甲、矣六",
+            "description": "滇池北岸最大的围垦区域。明代屯田制度下，大量军户和移民在此开垦湖滨湿地。清代围垦进一步向北推进，盘龙江三角洲完全变为农田。如今这里已成为昆明主城区的一部分。",
+            "intensity": "高"
+          },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [102.710,25.010],[102.730,25.005],[102.745,24.998],[102.748,24.985],
+            [102.742,24.975],[102.730,24.968],[102.718,24.962],[102.705,24.958],
+            [102.695,24.965],[102.688,24.978],[102.690,24.990],[102.698,25.000],
+            [102.710,25.010]
+          ]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "呈贡东岸围垦区",
+            "period": "清代",
+            "area_mu": 25000,
+            "village": "斗南、龙城、乌龙",
+            "description": "滇池东岸的主要围垦区。清代人口激增，呈贡一带沿湖居民大规模筑堤围田。斗南地区原是湖湾，被逐步填平成为著名的花卉种植基地。",
+            "intensity": "高"
+          },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [102.770,24.900],[102.782,24.895],[102.790,24.880],[102.792,24.865],
+            [102.788,24.850],[102.778,24.838],[102.768,24.830],[102.762,24.835],
+            [102.758,24.850],[102.758,24.868],[102.762,24.882],[102.770,24.900]
+          ]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "晋城围垦区",
+            "period": "明代-清代",
+            "area_mu": 18000,
+            "village": "晋城、上蒜、昆阳",
+            "description": "滇池南岸围垦区。明代开始有组织围垦，清代继续向南推进。该区域土质肥沃，围垦后成为重要的水稻产区。晋城地区至今保留着围垦时期的水利渠系。",
+            "intensity": "中"
+          },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [102.708,24.720],[102.720,24.718],[102.730,24.715],[102.735,24.708],
+            [102.738,24.700],[102.730,24.695],[102.718,24.692],[102.705,24.690],
+            [102.695,24.695],[102.688,24.705],[102.692,24.715],[102.700,24.720],
+            [102.708,24.720]
+          ]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "海口围垦区",
+            "period": "明代",
+            "area_mu": 12000,
+            "village": "海口镇、碧鸡",
+            "description": "滇池西岸海口河出口区域。明初为加速湖水下泄、降低水位以获取更多耕地，多次疏浚海口河（螳螂川）。水位下降后沿岸大片滩涂被开垦为农田。",
+            "intensity": "中"
+          },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [102.642,24.715],[102.650,24.712],[102.658,24.708],[102.660,24.700],
+            [102.655,24.692],[102.645,24.688],[102.635,24.690],[102.628,24.698],
+            [102.632,24.708],[102.638,24.715],[102.642,24.715]
+          ]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "西山脚下围垦区",
+            "period": "清代",
+            "area_mu": 8000,
+            "village": "碧鸡、观音山",
+            "description": "滇池西岸西山脚下的狭窄围垦带。受西山地形限制，围垦规模较小，主要分布在山脚与湖岸之间的狭窄滩涂地带。清代居民在此开垦小块梯田和鱼塘。",
+            "intensity": "低"
+          },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [102.632,24.740],[102.638,24.750],[102.640,24.762],[102.638,24.770],
+            [102.630,24.775],[102.622,24.772],[102.618,24.762],[102.615,24.750],
+            [102.618,24.740],[102.625,24.735],[102.632,24.740]
+          ]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "宝丰湿地围垦区",
+            "period": "清代",
+            "area_mu": 10000,
+            "village": "宝丰、海东",
+            "description": "滇池北岸东侧围垦区。宝丰一带原为大型湖湾湿地，清代被逐步围垦为农田和鱼塘。近年来部分区域已实施退田还湖，建设为宝丰湿地公园。",
+            "intensity": "中"
+          },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [102.728,24.978],[102.742,24.975],[102.755,24.968],[102.760,24.958],
+            [102.758,24.948],[102.748,24.940],[102.735,24.938],[102.725,24.942],
+            [102.718,24.952],[102.720,24.965],[102.728,24.978]
+          ]]}
+        },
+        {
+          "type": "Feature",
+          "properties": {
+            "name": "大渔围垦区",
+            "period": "清代-民国",
+            "area_mu": 15000,
+            "village": "大渔、马金铺",
+            "description": "滇池东南岸围垦区。清代中后期至民国时期逐步开发，以围塘养鱼和种植水稻为主。该区域围垦较晚，反映了围湖造田从北向南、从东向西的推进顺序。",
+            "intensity": "中"
+          },
+          "geometry": { "type": "Polygon", "coordinates": [[
+            [102.762,24.808],[102.775,24.802],[102.782,24.792],[102.785,24.780],
+            [102.780,24.770],[102.770,24.762],[102.758,24.758],[102.748,24.762],
+            [102.742,24.772],[102.745,24.788],[102.752,24.800],[102.762,24.808]
+          ]]}
+        }
+      ]
+    };
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const map = initStandardMap('map');
+
+      // 现代滇池(蓝色基准)
+      L.geoJSON(modernLakeGeo, {
+        style: { fillColor: '#3498db', fillOpacity: 0.2, color: '#2980b9', weight: 2 }
+      }).addTo(map).bindPopup('<b>现代滇池（2023年）</b><br>面积：309.5 km²');
+
+      // 围垦区图层
+      const intensityColors = {
+        '高': { fill: '#c0392b', opacity: 0.55 },
+        '中': { fill: '#e74c3c', opacity: 0.45 },
+        '低': { fill: '#f5b7b1', opacity: 0.40 }
+      };
+
+      const reclaimLayer = L.geoJSON(reclamationZones, {
+        style: function(feature) {
+          const c = intensityColors[feature.properties.intensity] || intensityColors['中'];
+          return { fillColor: c.fill, fillOpacity: c.opacity, color: '#922b21', weight: 1.5 };
+        },
+        onEachFeature: function(feature, layer) {
+          layer.bindPopup(createPopupContent(feature.properties));
+          layer.on('click', function() {
+            const p = feature.properties;
+            document.getElementById('sidebar-placeholder').style.display = 'none';
+            document.getElementById('sidebar-content').innerHTML = `
+              <div class="sidebar-title">🌾 ${p.name}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                <div style="background:#f0f4f8;padding:10px;border-radius:8px;text-align:center;">
+                  <div style="font-size:22px;font-weight:bold;color:#c0392b;">${formatMu(p.area_mu)}</div>
+                  <div style="font-size:11px;color:#888;">围垦面积</div>
+                </div>
+                <div style="background:#f0f4f8;padding:10px;border-radius:8px;text-align:center;">
+                  <div style="font-size:22px;font-weight:bold;color:#e67e22;">${p.intensity}</div>
+                  <div style="font-size:11px;color:#888;">围垦强度</div>
+                </div>
+              </div>
+              <p><strong>时期：</strong>${p.period}</p>
+              <p><strong>涉及村庄：</strong>${p.village}</p>
+              <p style="font-size:13px;color:#555;line-height:1.7;margin-top:8px;">${p.description}</p>
+            `;
+          });
+        }
+      }).addTo(map);
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>围垦强度图例</h4>
+            <div class="legend-item"><i style="background:#c0392b;opacity:0.7;"></i> 高强度围垦</div>
+            <div class="legend-item"><i style="background:#e74c3c;opacity:0.6;"></i> 中等强度围垦</div>
+            <div class="legend-item"><i style="background:#f5b7b1;opacity:0.5;"></i> 低强度围垦</div>
+            <div class="legend-item"><i style="background:#3498db;opacity:0.3;"></i> 现代水域</div>
+            <hr style="margin:6px 0;">
+            <small style="color:#888;">围垦总面积约：<b>${(reclamationZones.features.reduce((s,f)=>s+f.properties.area_mu,0)/10000).toFixed(1)} 万亩</b></small>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+    });
+  </script>
+</body>
+</html>

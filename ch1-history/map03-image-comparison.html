@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>③ 1950s VS 1980s 影像对比 — 滇池交互式地图集</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/map-base.css" />
+  <style>
+    /* Swipe container styles */
+    .swipe-wrapper {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow: hidden;
+    }
+    #map-before {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 2;
+      clip-path: inset(0 50% 0 0);
+    }
+    #map-after {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 1;
+    }
+    .swipe-divider {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 4px;
+      background: white;
+      z-index: 10;
+      left: 50%;
+      cursor: col-resize;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      transition: none;
+    }
+    .swipe-handle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      cursor: col-resize;
+      user-select: none;
+      z-index: 11;
+    }
+    .swipe-label {
+      position: absolute;
+      top: 12px;
+      padding: 6px 14px;
+      background: rgba(0,0,0,0.75);
+      color: white;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .swipe-label-before { left: 12px; }
+    .swipe-label-after { right: 12px; }
+    .area-indicator {
+      position: absolute;
+      bottom: 80px;
+      z-index: 10;
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+    }
+    .area-indicator.before { left: 12px; }
+    .area-indicator.after { right: 12px; }
+  </style>
+</head>
+<body>
+  <script>document.write(generateNavBar('03'));</script>
+
+  <div class="page-wrapper">
+    <div id="map-container">
+      <div class="swipe-wrapper">
+        <!-- Before (1950s) - left side -->
+        <div id="map-before">
+          <div class="swipe-label swipe-label-before">🏞 1950年代</div>
+          <div class="area-indicator before" id="area-before">水域面积: 350 km²</div>
+        </div>
+        <!-- After (1980s) - right side -->
+        <div id="map-after">
+          <div class="swipe-label swipe-label-after">🏭 1980年代</div>
+          <div class="area-indicator after" id="area-after">水域面积: 325 km²</div>
+        </div>
+        <!-- Swipe Divider -->
+        <div class="swipe-divider" id="swipe-divider">
+          <div class="swipe-handle">⇔</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/config.js"></script>
+  <script src="../assets/js/utils.js"></script>
+
+  <script>
+    // 1950s lake polygon
+    const lake1950 = {
+      "type": "Feature",
+      "properties": { "year": 1950, "area_km2": 350, "name": "1950年代滇池" },
+      "geometry": {"type":"Polygon","coordinates":[[[102.720,25.032],[102.738,25.018],[102.758,25.000],[102.775,24.975],[102.788,24.945],[102.795,24.912],[102.795,24.882],[102.790,24.855],[102.780,24.828],[102.765,24.800],[102.745,24.772],[102.725,24.748],[102.705,24.728],[102.685,24.712],[102.665,24.702],[102.648,24.698],[102.630,24.702],[102.615,24.715],[102.605,24.732],[102.598,24.755],[102.595,24.778],[102.598,24.800],[102.605,24.825],[102.615,24.848],[102.625,24.872],[102.635,24.898],[102.648,24.922],[102.662,24.945],[102.678,24.968],[102.695,24.988],[102.710,25.008],[102.720,25.032]]]}
+    };
+
+    // 1980s lake polygon
+    const lake1980 = {
+      "type": "Feature",
+      "properties": { "year": 1980, "area_km2": 325, "name": "1980年代滇池" },
+      "geometry": {"type":"Polygon","coordinates":[[[102.718,25.028],[102.735,25.015],[102.752,24.998],[102.768,24.975],[102.780,24.948],[102.788,24.918],[102.788,24.890],[102.782,24.862],[102.772,24.835],[102.758,24.808],[102.740,24.782],[102.722,24.758],[102.702,24.738],[102.685,24.722],[102.668,24.712],[102.652,24.708],[102.635,24.712],[102.622,24.722],[102.612,24.738],[102.605,24.758],[102.600,24.780],[102.602,24.802],[102.608,24.825],[102.615,24.848],[102.625,24.870],[102.635,24.895],[102.648,24.918],[102.662,24.940],[102.678,24.962],[102.695,24.982],[102.710,25.005],[102.718,25.028]]]}
+    };
+
+    // 围垦/变化区域高亮
+    const changedAreas = {
+      "type": "FeatureCollection",
+      "features": [
+        {"type":"Feature","properties":{"name":"北部退缩区"},"geometry":{"type":"Polygon","coordinates":[[[102.720,25.032],[102.738,25.018],[102.735,25.015],[102.718,25.028],[102.720,25.032]]]}},
+        {"type":"Feature","properties":{"name":"东部退缩区"},"geometry":{"type":"Polygon","coordinates":[[[102.780,24.828],[102.772,24.835],[102.788,24.918],[102.780,24.948],[102.780,24.828]]]}},
+        {"type":"Feature","properties":{"name":"南部退缩区"},"geometry":{"type":"Polygon","coordinates":[[[102.685,24.712],[102.685,24.722],[102.722,24.758],[102.725,24.748],[102.685,24.712]]]}}
+      ]
+    };
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化两个地图实例（before/after）
+      const mapBefore = L.map('map-before', {
+        center: MAP_CONFIG.center, zoom: 11, minZoom: 9, maxZoom: 18,
+        zoomControl: false, attributionControl: false
+      });
+      const mapAfter = L.map('map-after', {
+        center: MAP_CONFIG.center, zoom: 11, minZoom: 9, maxZoom: 18,
+        zoomControl: true, attributionControl: true
+      });
+
+      // 两个地图共用同一个底图
+      const addBasemaps = (m) => {
+        L.tileLayer(MAP_CONFIG.tileLayers.osm.url, { attribution: MAP_CONFIG.tileLayers.osm.attribution, maxZoom: 18 }).addTo(m);
+      };
+      addBasemaps(mapBefore);
+      addBasemaps(mapAfter);
+
+      // Before: 1950s lake (蓝色)
+      const beforeLayer = L.geoJSON(lake1950, {
+        style: { fillColor: '#2980b9', fillOpacity: 0.4, color: '#1a5276', weight: 2 }
+      }).addTo(mapBefore);
+      beforeLayer.bindPopup('<b>1950年代滇池</b><br>水域面积：约350 km²');
+
+      // After: 1980s lake (蓝色) + changed areas (红色)
+      const afterLake = L.geoJSON(lake1980, {
+        style: { fillColor: '#2980b9', fillOpacity: 0.4, color: '#1a5276', weight: 2 }
+      }).addTo(mapAfter);
+      afterLake.bindPopup('<b>1980年代滇池</b><br>水域面积：约325 km²');
+
+      const afterChange = L.geoJSON(changedAreas, {
+        style: { fillColor: '#e74c3c', fillOpacity: 0.5, color: '#c0392b', weight: 1, dashArray: '4,4' },
+        onEachFeature: function(f, l) {
+          l.bindPopup('⚠ <b>退缩区域</b><br>1950-1980年间被围垦的水域');
+        }
+      }).addTo(mapAfter);
+
+      // 同步缩放
+      mapBefore.on('zoom', () => { mapAfter.setZoom(mapBefore.getZoom()); });
+      mapAfter.on('zoom', () => { mapBefore.setZoom(mapAfter.getZoom()); });
+      mapBefore.on('move', () => { mapAfter.setView(mapBefore.getCenter(), mapAfter.getZoom()); });
+      mapAfter.on('move', () => { mapBefore.setView(mapAfter.getCenter(), mapBefore.getZoom()); });
+
+      // Swipe divider logic
+      const divider = document.getElementById('swipe-divider');
+      const mapContainer = document.getElementById('map-container');
+      let isDragging = false;
+
+      function setClip(percent) {
+        percent = Math.max(5, Math.min(95, percent));
+        divider.style.left = percent + '%';
+        document.getElementById('map-before').style.clipPath = `inset(0 ${100 - percent}% 0 0)`;
+      }
+
+      // Mouse events
+      divider.addEventListener('mousedown', (e) => { isDragging = true; e.preventDefault(); });
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const rect = mapContainer.getBoundingClientRect();
+        const percent = ((e.clientX - rect.left) / rect.width) * 100;
+        setClip(percent);
+      });
+      document.addEventListener('mouseup', () => { isDragging = false; });
+
+      // Touch events
+      divider.addEventListener('touchstart', (e) => { isDragging = true; e.preventDefault(); });
+      document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const rect = mapContainer.getBoundingClientRect();
+        const percent = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
+        setClip(percent);
+      });
+      document.addEventListener('touchend', () => { isDragging = false; });
+
+      // 图例
+      const legend = L.control({ position: 'bottomleft' });
+      legend.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div class="info-legend">
+            <h4>图例</h4>
+            <div class="legend-item"><i style="background:#2980b9;opacity:0.5;"></i> 滇池水域</div>
+            <div class="legend-item"><i style="background:#e74c3c;opacity:0.5;border:1px dashed #c0392b;"></i> 退缩区域 (1950→1980)</div>
+            <hr style="margin:4px 0;">
+            <small style="color:#888;">⇔ 拖动分割线对比</small>
+          </div>
+        `;
+        return div;
+      };
+      legend.addTo(mapAfter);
+    });
+  </script>
+</body>
+</html>
