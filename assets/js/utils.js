@@ -201,19 +201,21 @@ function initStandardMap(containerId, options) {
   });
 
   // 添加底图
-  const osmLayer = L.tileLayer(MAP_CONFIG.tileLayers.osm.url, {
-    attribution: MAP_CONFIG.tileLayers.osm.attribution,
-    maxZoom: 18
+  const streetLayer = L.tileLayer(MAP_CONFIG.tileLayers.street.url, {
+    attribution: MAP_CONFIG.tileLayers.street.attribution,
+    maxZoom: 18,
+    subdomains: ['1','2','3','4']
   }).addTo(map);
 
   const satelliteLayer = L.tileLayer(MAP_CONFIG.tileLayers.satellite.url, {
     attribution: MAP_CONFIG.tileLayers.satellite.attribution,
-    maxZoom: 18
+    maxZoom: 18,
+    subdomains: ['1','2','3','4']
   });
 
   // 底图切换控件
   L.control.layers({
-    '街道地图': osmLayer,
+    '街道地图': streetLayer,
     '卫星影像': satelliteLayer
   }, null, { position: 'topright' }).addTo(map);
 

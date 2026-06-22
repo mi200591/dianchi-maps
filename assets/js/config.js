@@ -13,17 +13,17 @@ const MAP_CONFIG = {
   maxZoom: 18,
   // 地图边界限制（昆明-滇池区域）
   maxBounds: [[24.2, 102.3], [25.5, 103.3]],
-  // 底图URL
+  // 底图URL（使用国内可访问的瓦片源）
   tileLayers: {
-    osm: {
+    street: {
       name: '街道地图',
-      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      url: 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+      attribution: '&copy; <a href="https://www.amap.com/">高德地图</a>'
     },
     satellite: {
       name: '卫星影像',
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+      url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+      attribution: '&copy; <a href="https://www.amap.com/">高德地图</a>'
     }
   }
 };
